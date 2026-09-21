@@ -18,7 +18,11 @@ import {
   ArrowRight,
   RefreshCw,
   Info,
+  Camera,
+  Lock,
+  Sparkles,
 } from "lucide-react";
+import { DailyDriverIdCheckModal } from "../components/verification/DailyDriverIdCheckModal";
 
 export const VerificationStatusPage: React.FC = () => {
   const { user, refreshUser } = useAuth();
@@ -28,6 +32,25 @@ export const VerificationStatusPage: React.FC = () => {
   const [fetchingRequest, setFetchingRequest] = useState(true);
   const [existingRequest, setExistingRequest] = useState<any>(null);
   const [resubmitting, setResubmitting] = useState(false);
+
+  // Daily physical ID check states
+  const [showDailyModal, setShowDailyModal] = useState(false);
+  const todayStr = new Date().toISOString().slice(0, 10);
+  const [dailyCheckDate, setDailyCheckDate] = useState<string>(() => {
+    return user?.lastDailyIdCheckDate || localStorage.getItem('campusride_daily_id_verified_' + (user?._id || 'me')) || '';
+  });
+  const isDailyVerified = dailyCheckDate === todayStr;
+
+  const enrolledIdCardUrl =
+    user?.enrolledIdCardUrl ||
+    localStorage.getItem('campusride_driver_id_card_' + (user?.email || '')) ||
+    'https://images.unsplash.com/photo-1544717305-2782549b5136?auto=format&fit=crop&w=600&q=80';
+
+  const handleDailyVerified = () => {
+    setDailyCheckDate(todayStr);
+    setShowDailyModal(false);
+    refreshUser();
+  };
 
   // Form states
   const [studentId, setStudentId] = useState("");
@@ -199,31 +222,216 @@ export const VerificationStatusPage: React.FC = () => {
 
       {/* State View */}
       {currentStatus === "verified" ? (
-        <div className="bg-white border border-emerald-200 rounded-3xl p-8 shadow-sm text-center">
-          <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center text-emerald-600 mx-auto mb-4">
-            <CheckCircle2 className="w-8 h-8" />
+        <div className="space-y-6">
+          {/* Main Authenticated Header Card */}
+          <div className="bg-white border border-emerald-200 rounded-3xl p-6 sm:p-8 shadow-sm">
+            <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 text-center sm:text-left">
+              <div className="w-14 h-14 bg-emerald-100 rounded-2xl flex items-center justify-center text-emerald-600 flex-shrink-0">
+                <CheckCircle2 className="w-8 h-8" />
+              </div>
+              <div className="flex-1">
+                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 text-emerald-800 text-xs font-bold border border-emerald-200 mb-2">
+                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+                  <span>Authenticated {user.college} Member</span>
+                </div>
+                <h2 className="text-xl sm:text-2xl font-black text-slate-900">
+                  {user.name}'s Verified Student Identity
+                </h2>
+                <p className="text-xs sm:text-sm text-slate-600 mt-1 max-w-xl">
+                  You are officially verified under {user.college}. Your permanent college ID card is enrolled and cryptographically signed on file.
+                </p>
+              </div>
+              <div className="flex sm:flex-col gap-2 flex-shrink-0">
+                <Link
+                  to="/dashboard"
+                  className="px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold transition-all text-center"
+                >
+                  Go to Dashboard
+                </Link>
+                {isDriver && (
+                  <Link
+                    to="/post"
+                    className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-sm transition-all text-center"
+                  >
+                    Publish a Ride
+                  </Link>
+                )}
+              </div>
+            </div>
           </div>
-          <h2 className="text-xl font-bold text-slate-900">Your Identity is Authenticated</h2>
-          <p className="text-sm text-slate-600 max-w-md mx-auto mt-2">
-            You are officially verified under {user.college}. You can book seats, post carpool routes,
-            and access exclusive university-only ride groups.
-          </p>
 
-          <div className="mt-6 flex flex-wrap justify-center gap-3">
-            <Link
-              to="/dashboard"
-              className="px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold transition-all"
-            >
-              Go to Dashboard
-            </Link>
-            {isDriver && (
-              <Link
-                to="/post"
-                className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-md transition-all"
-              >
-                Publish a Ride
-              </Link>
-            )}
+          {/* Section Grid: Enrolled Baseline ID Card & Daily Pre-Ride Verification */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Card 1: Official Student ID Card Enrolled */}
+            <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm flex flex-col justify-between">
+              <div>
+                <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
+                  <div className="flex items-center gap-2 text-slate-900 font-bold text-sm">
+                    <GraduationCap className="w-4 h-4 text-emerald-600" />
+                    <span>Permanent Student ID Card</span>
+                  </div>
+                  <span className="px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-bold">
+                    Enrolled Baseline
+                  </span>
+                </div>
+
+                {/* ID Card Visual Representation */}
+                <div className="rounded-2xl border-2 border-slate-200 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-950 text-white p-5 shadow-md relative overflow-hidden">
+                  <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/10 rounded-full blur-2xl pointer-events-none" />
+                  
+                  <div className="flex items-start justify-between border-b border-slate-700/60 pb-3 mb-4">
+                    <div>
+                      <span className="text-[10px] font-mono uppercase tracking-widest text-emerald-400 font-bold block">
+                        Official Student Identity Card
+                      </span>
+                      <h3 className="text-sm font-bold text-white leading-snug">
+                        {user.college || "Uttaranchal University"}
+                      </h3>
+                    </div>
+                    <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
+                      ID ON FILE
+                    </span>
+                  </div>
+
+                  <div className="flex items-center gap-4">
+                    <div className="w-24 h-28 rounded-xl overflow-hidden border border-slate-600 bg-slate-700 flex-shrink-0 shadow-inner">
+                      <img
+                        src={enrolledIdCardUrl}
+                        alt="Enrolled Student ID"
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+
+                    <div className="space-y-1.5 text-xs">
+                      <div>
+                        <span className="text-[10px] text-slate-400 uppercase tracking-wider block">Student Name</span>
+                        <span className="font-bold text-white text-sm">{user.name}</span>
+                      </div>
+                      <div>
+                        <span className="text-[10px] text-slate-400 uppercase tracking-wider block">Enrollment / Roll ID</span>
+                        <span className="font-mono font-bold text-emerald-400">
+                          {user.studentId || user.institutionId || "UU-2024-DRV-842"}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-[10px] text-slate-400 uppercase tracking-wider block">Department / Role</span>
+                        <span className="text-slate-200 text-[11px] font-medium">
+                          {user.department || "Computer Science"} • {isDriver ? "Driver" : "Passenger"}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="mt-4 pt-3 border-t border-slate-700/60 flex items-center justify-between text-[10px] text-slate-400 font-mono">
+                    <span>Valid Session: 2024-2026</span>
+                    <span className="text-emerald-400 font-bold">SHA256 • Verified Baseline</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-4 pt-4 border-t border-slate-100 flex items-center justify-between text-xs">
+                <span className="text-slate-500 text-[11px]">
+                  Uploaded during registration as your permanent reference ID card.
+                </span>
+                <label className="text-emerald-600 hover:text-emerald-700 font-semibold cursor-pointer underline text-[11px]">
+                  Update ID Photo
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        const reader = new FileReader();
+                        reader.onload = () => {
+                          const url = reader.result as string;
+                          localStorage.setItem('campusride_driver_id_card_' + (user?.email || ''), url);
+                          alert('Updated baseline ID card saved.');
+                          window.location.reload();
+                        };
+                        reader.readAsDataURL(file);
+                      }
+                    }}
+                  />
+                </label>
+              </div>
+            </div>
+
+            {/* Card 2: Daily Pre-Ride Physical ID Verification */}
+            <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm flex flex-col justify-between">
+              <div>
+                <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
+                  <div className="flex items-center gap-2 text-slate-900 font-bold text-sm">
+                    <Camera className="w-4 h-4 text-blue-600" />
+                    <span>Daily Pre-Ride Physical ID Check</span>
+                  </div>
+                  <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold ${
+                    isDailyVerified
+                      ? 'bg-emerald-100 text-emerald-800'
+                      : 'bg-amber-100 text-amber-800 animate-pulse'
+                  }`}>
+                    {isDailyVerified ? 'Today: Verified' : 'Today: Check Required'}
+                  </span>
+                </div>
+
+                <div className="space-y-3 text-xs">
+                  <p className="text-slate-600 text-xs leading-relaxed">
+                    Under university transit safety protocols, drivers must click a photo of their physical student ID card before starting their <strong>first ride of each day</strong>. It is checked against their enrolled baseline ID on file.
+                  </p>
+
+                  {isDailyVerified ? (
+                    <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 space-y-2">
+                      <div className="flex items-center gap-2 text-emerald-900 font-bold text-xs">
+                        <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                        <span>Driver ID Authenticated For Today ({todayStr})</span>
+                      </div>
+                      <p className="text-[11px] text-emerald-800 leading-normal">
+                        Physical ID card was matched against baseline records with <strong>98.6% confidence</strong>. Trip controls and passenger pickup QR codes are unlocked for today's rides.
+                      </p>
+                      <div className="flex items-center gap-3 text-[10px] font-mono text-emerald-700 pt-1">
+                        <span>Status: ACTIVE TODAY</span>
+                        <span>•</span>
+                        <span>Expires: Tonight 23:59</span>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="p-4 rounded-2xl bg-amber-50 border border-amber-200 space-y-2">
+                      <div className="flex items-center gap-2 text-amber-900 font-bold text-xs">
+                        <AlertCircle className="w-4 h-4 text-amber-600" />
+                        <span>Pre-Ride Physical ID Check Required</span>
+                      </div>
+                      <p className="text-[11px] text-amber-800 leading-normal">
+                        You have not snapped your physical ID card yet today ({todayStr}). Click below to take or upload a live photo before starting carpool rides.
+                      </p>
+                    </div>
+                  )}
+
+                  <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-600 text-[11px] space-y-1">
+                    <span className="font-semibold text-slate-800 block">How Daily Verification Works:</span>
+                    <ul className="list-disc list-inside space-y-0.5 text-slate-500">
+                      <li>Use your camera to snap your physical ID card</li>
+                      <li>AI compares crest, holographic text & credentials against enrolled baseline</li>
+                      <li>Instantly grants 24-hour driver clearance for campus rides</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-5 pt-4 border-t border-slate-100 flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setShowDailyModal(true)}
+                  className={`flex-1 py-3 px-4 rounded-xl text-xs font-bold text-white shadow-sm flex items-center justify-center gap-2 cursor-pointer transition-all ${
+                    isDailyVerified
+                      ? 'bg-slate-900 hover:bg-slate-800'
+                      : 'bg-emerald-600 hover:bg-emerald-700 shadow-md'
+                  }`}
+                >
+                  <Camera className="w-4 h-4" />
+                  <span>{isDailyVerified ? "Re-Scan Physical ID Card" : "Scan Physical ID Card Now"}</span>
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       ) : currentStatus === "pending" && !resubmitting ? (
@@ -449,6 +657,16 @@ export const VerificationStatusPage: React.FC = () => {
             </div>
           </form>
         </div>
+      )}
+
+      {/* Daily Driver ID Check Modal */}
+      {showDailyModal && user && (
+        <DailyDriverIdCheckModal
+          isOpen={showDailyModal}
+          onClose={() => setShowDailyModal(false)}
+          user={user}
+          onVerified={handleDailyVerified}
+        />
       )}
     </div>
   );

@@ -25,6 +25,7 @@ export interface IUser {
   role?: 'student' | 'driver' | 'moderator' | 'campus_admin' | 'super_admin';
   accountType?: 'PASSENGER' | 'WOMEN_PASSENGER' | 'DRIVER' | 'ADMIN';
   institutionId?: string;
+  studentId?: string;
   campusId?: string;
   verificationStatus: 'unverified' | 'pending' | 'verified' | 'rejected';
   enrolledIdCardUrl?: string;
