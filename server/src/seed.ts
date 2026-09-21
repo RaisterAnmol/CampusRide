@@ -689,6 +689,126 @@ export async function seedDemoData() {
     },
   });
 
+  // 13. Riya Rawat (Graphic Era University - Female Driver)
+  const riya = await User.create({
+    name: "Riya Rawat",
+    email: "riya.rawat@geu.ac.in",
+    passwordHash,
+    college: "Graphic Era University",
+    department: "CSE",
+    course: "B.Tech",
+    year: 3,
+    semester: 6,
+    phone: "+91 98765 11001",
+    avatarURL: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80",
+    verificationStatus: "verified",
+    rating: 4.9,
+    totalRides: 31,
+    gender: "female",
+    preferences: {
+      womenOnlyDriver: true,
+      musicAllowed: true,
+      smokingAllowed: false,
+      petsAllowed: false,
+    },
+  });
+
+  // 14. Pooja Negi (Graphic Era Hill University - Female Driver)
+  const pooja = await User.create({
+    name: "Pooja Negi",
+    email: "pooja.negi@gehu.ac.in",
+    passwordHash,
+    college: "Graphic Era Hill University",
+    department: "Management",
+    course: "MBA",
+    year: 1,
+    semester: 2,
+    phone: "+91 98765 11002",
+    avatarURL: "https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=200&q=80",
+    verificationStatus: "verified",
+    rating: 4.85,
+    totalRides: 19,
+    gender: "female",
+    preferences: {
+      womenOnlyDriver: true,
+      musicAllowed: true,
+      smokingAllowed: false,
+      petsAllowed: false,
+    },
+  });
+
+  // 15. Kavita Joshi (UPES - Female Driver)
+  const kavita = await User.create({
+    name: "Kavita Joshi",
+    email: "kavita.joshi@upes.ac.in",
+    passwordHash,
+    college: "UPES (University of Petroleum and Energy Studies)",
+    department: "School of Computer Science",
+    course: "B.Tech",
+    year: 4,
+    semester: 7,
+    phone: "+91 98765 11003",
+    avatarURL: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=200&q=80",
+    verificationStatus: "verified",
+    rating: 4.95,
+    totalRides: 27,
+    gender: "female",
+    preferences: {
+      womenOnlyDriver: true,
+      musicAllowed: true,
+      smokingAllowed: false,
+      petsAllowed: false,
+    },
+  });
+
+  // 16. Megha Chauhan (DIT University - Female Driver)
+  const megha = await User.create({
+    name: "Megha Chauhan",
+    email: "megha.chauhan@dit.ac.in",
+    passwordHash,
+    college: "DIT University",
+    department: "Engineering",
+    course: "B.Tech",
+    year: 2,
+    semester: 4,
+    phone: "+91 98765 11004",
+    avatarURL: "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=200&q=80",
+    verificationStatus: "verified",
+    rating: 4.8,
+    totalRides: 16,
+    gender: "female",
+    preferences: {
+      womenOnlyDriver: true,
+      musicAllowed: true,
+      smokingAllowed: false,
+      petsAllowed: false,
+    },
+  });
+
+  // 17. Aarav Bhatnagar (Graphic Era University - Driver)
+  const aarav = await User.create({
+    name: "Aarav Bhatnagar",
+    email: "aarav.bhatnagar@geu.ac.in",
+    passwordHash,
+    college: "Graphic Era University",
+    department: "CSE",
+    course: "B.Tech",
+    year: 4,
+    semester: 7,
+    phone: "+91 98765 11005",
+    avatarURL: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=200&q=80",
+    verificationStatus: "verified",
+    rating: 4.9,
+    totalRides: 22,
+    gender: "male",
+    preferences: {
+      womenOnlyDriver: false,
+      musicAllowed: true,
+      smokingAllowed: false,
+      petsAllowed: false,
+    },
+  });
+
   // ==========================================
   // 2. VEHICLES
   // ==========================================
@@ -754,6 +874,46 @@ export async function seedDemoData() {
     model: "Tata Punch EV (Empowered Oxide)",
     capacity: 4,
     plateLast4: "8890",
+  });
+
+  const riyaVehicle = await Vehicle.create({
+    ownerUserId: riya._id,
+    type: "car",
+    model: "Maruti Suzuki Baleno Alpha (Pearl White)",
+    capacity: 4,
+    plateLast4: "1045",
+  });
+
+  const poojaVehicle = await Vehicle.create({
+    ownerUserId: pooja._id,
+    type: "car",
+    model: "Tata Punch EV (Teal Blue)",
+    capacity: 4,
+    plateLast4: "2198",
+  });
+
+  const kavitaVehicle = await Vehicle.create({
+    ownerUserId: kavita._id,
+    type: "car",
+    model: "Honda Amaze VX (Urban Silver)",
+    capacity: 4,
+    plateLast4: "3341",
+  });
+
+  const meghaVehicle = await Vehicle.create({
+    ownerUserId: megha._id,
+    type: "car",
+    model: "Hyundai Venue SX (Denim Blue)",
+    capacity: 4,
+    plateLast4: "4892",
+  });
+
+  const aaravVehicle = await Vehicle.create({
+    ownerUserId: aarav._id,
+    type: "car",
+    model: "Hyundai Creta SX (Phantom Black)",
+    capacity: 4,
+    plateLast4: "9021",
   });
 
   // ==========================================
@@ -1569,6 +1729,161 @@ export async function seedDemoData() {
     recurringSchedule: {
       daysOfWeek: [1, 2, 3, 4, 5],
       time: "16:30",
+    },
+  });
+
+  // Ride 35: Riya Rawat (Selaqui Hub -> ISBT Dehradun) - Graphic Era University Female Driver
+  const riyaSelaquiToIsbt = await Ride.create({
+    creator: riya._id,
+    origin: {
+      text: "Selaqui Industrial & Institutional Hub",
+      lat: 30.3685,
+      lng: 77.8540,
+    },
+    destination: {
+      text: "ISBT Dehradun (Inter-State Bus Terminal)",
+      lat: 30.2868,
+      lng: 78.0081,
+    },
+    departureTime: new Date(now.getTime() + 1.5 * 60 * 60 * 1000),
+    availableSeats: 3,
+    pricePerSeat: 40,
+    vehicleId: riyaVehicle._id,
+    status: "active",
+    recurring: true,
+    recurringSchedule: {
+      daysOfWeek: [1, 2, 3, 4, 5],
+      time: "08:15",
+    },
+    preferences: {
+      womenOnlyDriver: true,
+      musicAllowed: true,
+      smokingAllowed: false,
+      petsAllowed: false,
+    },
+  });
+
+  // Ride 36: Pooja Negi (Selaqui Hub -> ISBT Dehradun) - Graphic Era Hill University Female Driver
+  const poojaSelaquiToIsbt = await Ride.create({
+    creator: pooja._id,
+    origin: {
+      text: "Selaqui Industrial & Institutional Hub",
+      lat: 30.3685,
+      lng: 77.8540,
+    },
+    destination: {
+      text: "ISBT Dehradun (Inter-State Bus Terminal)",
+      lat: 30.2868,
+      lng: 78.0081,
+    },
+    departureTime: new Date(now.getTime() + 2 * 60 * 60 * 1000),
+    availableSeats: 3,
+    pricePerSeat: 45,
+    vehicleId: poojaVehicle._id,
+    status: "active",
+    recurring: true,
+    recurringSchedule: {
+      daysOfWeek: [1, 2, 3, 4, 5],
+      time: "08:45",
+    },
+    preferences: {
+      womenOnlyDriver: true,
+      musicAllowed: true,
+      smokingAllowed: false,
+      petsAllowed: false,
+    },
+  });
+
+  // Ride 37: Aarav Bhatnagar (Selaqui Hub -> ISBT Dehradun) - Graphic Era University Driver
+  const aaravSelaquiToIsbt = await Ride.create({
+    creator: aarav._id,
+    origin: {
+      text: "Selaqui Industrial & Institutional Hub",
+      lat: 30.3685,
+      lng: 77.8540,
+    },
+    destination: {
+      text: "ISBT Dehradun (Inter-State Bus Terminal)",
+      lat: 30.2868,
+      lng: 78.0081,
+    },
+    departureTime: new Date(now.getTime() + 2.5 * 60 * 60 * 1000),
+    availableSeats: 3,
+    pricePerSeat: 40,
+    vehicleId: aaravVehicle._id,
+    status: "active",
+    recurring: true,
+    recurringSchedule: {
+      daysOfWeek: [1, 2, 3, 4, 5],
+      time: "09:00",
+    },
+    preferences: {
+      womenOnlyDriver: false,
+      musicAllowed: true,
+      smokingAllowed: false,
+      petsAllowed: false,
+    },
+  });
+
+  // Ride 38: Kavita Joshi (ISBT Dehradun -> Selaqui Hub) - UPES Female Driver
+  const kavitaIsbtToSelaqui = await Ride.create({
+    creator: kavita._id,
+    origin: {
+      text: "ISBT Dehradun (Inter-State Bus Terminal)",
+      lat: 30.2868,
+      lng: 78.0081,
+    },
+    destination: {
+      text: "Selaqui Industrial & Institutional Hub",
+      lat: 30.3685,
+      lng: 77.8540,
+    },
+    departureTime: new Date(now.getTime() + 3 * 60 * 60 * 1000),
+    availableSeats: 3,
+    pricePerSeat: 45,
+    vehicleId: kavitaVehicle._id,
+    status: "active",
+    recurring: true,
+    recurringSchedule: {
+      daysOfWeek: [1, 2, 3, 4, 5],
+      time: "17:15",
+    },
+    preferences: {
+      womenOnlyDriver: true,
+      musicAllowed: true,
+      smokingAllowed: false,
+      petsAllowed: false,
+    },
+  });
+
+  // Ride 39: Megha Chauhan (Selaqui Hub -> UIT Building) - DIT Female Driver
+  const meghaSelaquiToUit = await Ride.create({
+    creator: megha._id,
+    origin: {
+      text: "Selaqui Industrial & Institutional Hub",
+      lat: 30.3685,
+      lng: 77.8540,
+    },
+    destination: {
+      text: "UIT Building (Uttaranchal Institute of Technology)",
+      lat: 30.3432,
+      lng: 77.9448,
+    },
+    departureTime: new Date(now.getTime() + 1.2 * 60 * 60 * 1000),
+    availableSeats: 4,
+    pricePerSeat: 30,
+    vehicleId: meghaVehicle._id,
+    status: "active",
+    recurring: true,
+    recurringSchedule: {
+      daysOfWeek: [1, 2, 3, 4, 5],
+      time: "08:00",
+    },
+    preferences: {
+      womenOnlyDriver: true,
+      musicAllowed: true,
+      smokingAllowed: false,
+      petsAllowed: false,
     },
   });
 
