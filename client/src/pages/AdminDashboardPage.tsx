@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { api } from "../services/api";
 import { getSocket, joinSecurityHub } from "../services/socket";
+import { useAuth } from "../context/AuthContext";
 import { IMobilityAnalytics } from "../types";
 import {
   ShieldAlert,
@@ -39,7 +41,18 @@ import {
 type AdminTab = "overview" | "pricing" | "soc" | "verifications" | "analytics" | "hubs" | "audit";
 
 export const AdminDashboardPage: React.FC = () => {
+  const { activePersona } = useAuth();
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<AdminTab>("overview");
+
+  // Strict Persona Redirection: Drivers only post rides, Passengers only search rides
+  useEffect(() => {
+    if (activePersona === 'driver') {
+      navigate('/post', { replace: true });
+    } else if (activePersona === 'passenger') {
+      navigate('/search', { replace: true });
+    }
+  }, [activePersona, navigate]);
 
   // Real-Time Operations Telemetry State
   const [opsData, setOpsData] = useState<{

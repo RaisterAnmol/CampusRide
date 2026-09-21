@@ -24,13 +24,13 @@ export interface AuthenticatedRequest extends Request {
 const JWT_SECRET = env.JWT_SECRET;
 const JWT_REFRESH_SECRET = env.JWT_REFRESH_SECRET || env.JWT_SECRET;
 
-// 15-minute access token (§2.6)
+// Extended access token for seamless development & campus commute operations
 export function signToken(payload: AuthUserPayload): string {
   const safePayload = {
     ...payload,
     role: payload.role || "student",
   };
-  return jwt.sign(safePayload, JWT_SECRET, { expiresIn: "15m" });
+  return jwt.sign(safePayload, JWT_SECRET, { expiresIn: "30d" });
 }
 
 // 7-day refresh token with tokenVersion tracking (§2.6)

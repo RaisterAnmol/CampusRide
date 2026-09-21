@@ -27,12 +27,13 @@ import {
   Map,
 } from 'lucide-react';
 import { PickupAndRouteNavigationMap } from '../components/map/PickupAndRouteNavigationMap';
+import { UTTARAKHAND_UNIVERSITIES } from '../data/csvDataLoader';
 
 export interface PresetLocation {
   text: string;
   lat: number;
   lng: number;
-  category: 'Campus Buildings' | 'Dehradun & Surrounding' | 'Metro & Other Hubs';
+  category: 'Campus Buildings' | 'Dehradun & Surrounding';
 }
 
 const PRESET_LOCATIONS: PresetLocation[] = [
@@ -51,22 +52,11 @@ const PRESET_LOCATIONS: PresetLocation[] = [
   { text: 'ISBT Dehradun (Inter-State Bus Terminal)', lat: 30.2885, lng: 78.0080, category: 'Dehradun & Surrounding' },
   { text: 'Ballupur Chowk (City Entrance)', lat: 30.3395, lng: 78.0125, category: 'Dehradun & Surrounding' },
   { text: 'Clock Tower (Ghanta Ghar / Paltan Bazaar)', lat: 30.3256, lng: 78.0437, category: 'Dehradun & Surrounding' },
-
-  // Metro & National Corridors
-  { text: 'Campus Gate 1 (Main Entrance)', lat: 28.545, lng: 77.192, category: 'Metro & Other Hubs' },
-  { text: 'North Campus Hostel Complex', lat: 28.552, lng: 77.185, category: 'Metro & Other Hubs' },
-  { text: 'City Metro Station (Blue Line)', lat: 28.567, lng: 77.208, category: 'Metro & Other Hubs' },
-  { text: 'Central Railway Station', lat: 28.58, lng: 77.22, category: 'Metro & Other Hubs' },
-  { text: 'Cyber City Tech Park', lat: 28.495, lng: 77.089, category: 'Metro & Other Hubs' },
-  { text: 'Airport Terminal 1', lat: 28.556, lng: 77.1, category: 'Metro & Other Hubs' },
 ];
 
 const UNIVERSITIES = [
   'Any',
-  'Uttaranchal University',
-  'Graphic Era University',
-  'UPES',
-  'Delhi Technological University',
+  ...UTTARAKHAND_UNIVERSITIES.map((u) => u.name),
 ];
 
 const COURSES = [
@@ -96,8 +86,8 @@ export const SearchRidesPage: React.FC = () => {
   const navigate = useNavigate();
 
   // Basic Route State
-  const [originIndex, setOriginIndex] = useState(0); // Campus Gate 1
-  const [destIndex, setDestIndex] = useState(2); // City Metro Station
+  const [originIndex, setOriginIndex] = useState(0); // UIT Building
+  const [destIndex, setDestIndex] = useState(5); // Premnagar Chowk Market
   const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [seats, setSeats] = useState(1);
   const [womenOnlyDriver, setWomenOnlyDriver] = useState(() => !!user?.preferences?.womenOnlyDriver);
@@ -235,14 +225,26 @@ export const SearchRidesPage: React.FC = () => {
     }
   };
 
-  // Run initial search when user, route, or filter changes
+  // Strict Persona Redirection: Drivers ONLY post rides, Admins ONLY dashboard
   useEffect(() => {
+    if (activePersona === 'driver') {
+      navigate('/post', { replace: true });
+    } else if (activePersona === 'admin') {
+      navigate('/admin', { replace: true });
+    }
+  }, [activePersona, navigate]);
+
+  // Run initial search when user, route, or filter changes (PASSENGERS ONLY)
+  useEffect(() => {
+    if (activePersona !== 'passenger') {
+      return;
+    }
     if (user) {
       handleSearch();
     } else {
       switchDemoUser('rahul').catch(() => {});
     }
-  }, [user, originIndex, destIndex, womenOnlyDriver]);
+  }, [user, originIndex, destIndex, womenOnlyDriver, activePersona]);
 
   const handleRequestRide = async (rideId: string) => {
     setRequestingId(rideId);
@@ -437,16 +439,6 @@ export const SearchRidesPage: React.FC = () => {
                     );
                   })}
                 </optgroup>
-                <optgroup label="🚆 Metro & Other Corridors">
-                  {PRESET_LOCATIONS.filter((l) => l.category === 'Metro & Other Hubs').map((loc) => {
-                    const idx = PRESET_LOCATIONS.indexOf(loc);
-                    return (
-                      <option key={idx} value={idx}>
-                        {loc.text}
-                      </option>
-                    );
-                  })}
-                </optgroup>
               </select>
             </div>
 
@@ -472,16 +464,6 @@ export const SearchRidesPage: React.FC = () => {
                 </optgroup>
                 <optgroup label="📍 Dehradun & Surrounding Hubs">
                   {PRESET_LOCATIONS.filter((l) => l.category === 'Dehradun & Surrounding').map((loc) => {
-                    const idx = PRESET_LOCATIONS.indexOf(loc);
-                    return (
-                      <option key={idx} value={idx}>
-                        {loc.text}
-                      </option>
-                    );
-                  })}
-                </optgroup>
-                <optgroup label="🚆 Metro & Other Corridors">
-                  {PRESET_LOCATIONS.filter((l) => l.category === 'Metro & Other Hubs').map((loc) => {
                     const idx = PRESET_LOCATIONS.indexOf(loc);
                     return (
                       <option key={idx} value={idx}>
@@ -749,17 +731,40 @@ export const SearchRidesPage: React.FC = () => {
               </button>
             </div>
           </div>
-
-          {/* Interactive Route & Pickup Navigation Map Panel */}
-          {showOverviewMap && (
-            <div className="pt-4 border-t border-slate-100">
-              <PickupAndRouteNavigationMap
-                originText={PRESET_LOCATIONS[originIndex]?.text}
-                destinationText={PRESET_LOCATIONS[destIndex]?.text}
-              />
-            </div>
-          )}
         </form>
+
+        {/* Interactive Route & Pickup Navigation Map Panel */}
+        {showOverviewMap && (
+          <div className="pt-6 mt-6 border-t border-slate-100">
+            <PickupAndRouteNavigationMap
+              originText={PRESET_LOCATIONS[originIndex]?.text}
+              destinationText={PRESET_LOCATIONS[destIndex]?.text}
+              onOriginChange={(newOrig) => {
+                const idx = PRESET_LOCATIONS.findIndex(
+                  (p) =>
+                    p.text.toLowerCase().includes(newOrig.toLowerCase()) ||
+                    newOrig.toLowerCase().includes(p.text.toLowerCase())
+                );
+                if (idx !== -1) {
+                  setOriginIndex(idx);
+                }
+              }}
+              onDestinationChange={(newDest) => {
+                const idx = PRESET_LOCATIONS.findIndex(
+                  (p) =>
+                    p.text.toLowerCase().includes(newDest.toLowerCase()) ||
+                    newDest.toLowerCase().includes(p.text.toLowerCase())
+                );
+                if (idx !== -1) {
+                  setDestIndex(idx);
+                }
+              }}
+              onSelectRoute={(corridor) => {
+                console.log('[Search] User selected driving route:', corridor.name);
+              }}
+            />
+          </div>
+        )}
       </div>
 
       {/* Global Notifications */}

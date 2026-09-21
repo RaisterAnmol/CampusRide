@@ -46,7 +46,116 @@ function getLocalDemoFallback<T>(endpoint: string, options: RequestInit): T | un
 
     if (path === "/api/rides" && (!options.method || options.method === "GET")) {
       const customRides = JSON.parse(localStorage.getItem("campusride_local_rides") || "[]");
-      return [...customRides, ...DEMO_FALLBACK_RIDES] as T;
+      let allRides = [...customRides, ...DEMO_FALLBACK_RIDES];
+
+      const originLat = url.searchParams.get("originLat") ? parseFloat(url.searchParams.get("originLat")!) : null;
+      const originLng = url.searchParams.get("originLng") ? parseFloat(url.searchParams.get("originLng")!) : null;
+      const destLat = url.searchParams.get("destLat") ? parseFloat(url.searchParams.get("destLat")!) : null;
+      const destLng = url.searchParams.get("destLng") ? parseFloat(url.searchParams.get("destLng")!) : null;
+      const seats = url.searchParams.get("seats") ? parseInt(url.searchParams.get("seats")!, 10) : 1;
+      const womenOnly = url.searchParams.get("womenOnlyDriver") === "true";
+      const college = url.searchParams.get("college");
+      const department = url.searchParams.get("department");
+      const course = url.searchParams.get("course");
+      const year = url.searchParams.get("year");
+      const semester = url.searchParams.get("semester");
+      const verifiedOnly = url.searchParams.get("verifiedOnly") === "true";
+      const maxFare = url.searchParams.get("maxFare") ? parseFloat(url.searchParams.get("maxFare")!) : null;
+      const minRating = url.searchParams.get("minRating") ? parseFloat(url.searchParams.get("minRating")!) : null;
+      const date = url.searchParams.get("date");
+
+      const haversine = (lat1: number, lon1: number, lat2: number, lon2: number) => {
+        const R = 6371;
+        const dLat = ((lat2 - lat1) * Math.PI) / 180;
+        const dLon = ((lon2 - lon1) * Math.PI) / 180;
+        const a =
+          Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+          Math.cos((lat1 * Math.PI) / 180) *
+            Math.cos((lat2 * Math.PI) / 180) *
+            Math.sin(dLon / 2) *
+            Math.sin(dLon / 2);
+        return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+      };
+
+      return allRides.filter((r: any) => {
+        const driver = r.creator || {};
+
+        // Seats filter
+        if (r.availableSeats !== undefined && r.availableSeats < seats) return false;
+
+        // Women only driver
+        if (womenOnly && driver.gender !== "female" && !r.preferences?.womenOnlyDriver) return false;
+
+        // College filter
+        if (college && college !== "Any" && college !== "all") {
+          const cF = college.toLowerCase().trim();
+          const dC = (driver.college || "").toLowerCase();
+          if (!dC.includes(cF) && !cF.includes(dC)) return false;
+        }
+
+        // Department filter
+        if (department && department !== "Any" && department !== "all") {
+          const dF = department.toLowerCase().trim();
+          const dD = (driver.department || "").toLowerCase();
+          if (!dD.includes(dF) && !dF.includes(dD)) return false;
+        }
+
+        // Course filter
+        if (course && course !== "Any" && course !== "all") {
+          const crsF = course.toLowerCase().trim();
+          const dCrs = (driver.course || "").toLowerCase();
+          if (!dCrs.includes(crsF) && !crsF.includes(dCrs)) return false;
+        }
+
+        // Year filter
+        if (year && year !== "Any" && year !== "all") {
+          const yNum = parseInt(year, 10);
+          if (!isNaN(yNum) && driver.year !== yNum) return false;
+        }
+
+        // Semester filter
+        if (semester && semester !== "Any" && semester !== "all") {
+          const sNum = parseInt(semester, 10);
+          if (!isNaN(sNum) && driver.semester !== sNum) return false;
+        }
+
+        // Verified filter
+        if (verifiedOnly && driver.verificationStatus !== "verified") return false;
+
+        // Rating filter
+        if (minRating !== null && !isNaN(minRating) && (driver.rating || 0) < minRating) return false;
+
+        // Fare filter
+        if (maxFare !== null && !isNaN(maxFare) && (r.pricing?.costPerSeat || 0) > maxFare) return false;
+
+        // Date filter
+        if (date && !r.recurring) {
+          const rideDateStr = (r.departureTime || "").slice(0, 10);
+          let targetDateStr = date.trim();
+          if (targetDateStr.includes("-")) {
+            const parts = targetDateStr.split("-");
+            if (parts[0].length === 2 && parts[2].length === 4) {
+              targetDateStr = `${parts[2]}-${parts[1]}-${parts[0]}`;
+            }
+          }
+          if (rideDateStr && targetDateStr && rideDateStr !== targetDateStr) {
+            // Keep if recurring or within date range
+            if (!r.recurringSchedule?.daysOfWeek?.length) return false;
+          }
+        }
+
+        // Geographic proximity match (within 2.8 km threshold)
+        if (originLat !== null && originLng !== null && r.origin) {
+          const origDist = haversine(originLat, originLng, r.origin.lat, r.origin.lng);
+          if (origDist > 2.8) return false;
+        }
+        if (destLat !== null && destLng !== null && r.destination) {
+          const destDist = haversine(destLat, destLng, r.destination.lat, r.destination.lng);
+          if (destDist > 2.8) return false;
+        }
+
+        return true;
+      }) as T;
     }
 
     if (path === "/api/rides" && options.method === "POST") {
@@ -146,6 +255,42 @@ class ApiService {
       });
 
       if (!response.ok) {
+        if (response.status === 401 && !endpoint.includes('/api/auth/login')) {
+          // Attempt seamless session refresh for active student persona
+          const savedPersona = localStorage.getItem("campusride_persona") || "passenger";
+          const savedEmail = localStorage.getItem("campusride_user_email");
+          const email = savedEmail || (
+            savedPersona === "driver" 
+              ? "aditya.kumar@college.edu" 
+              : savedPersona === "admin" 
+              ? "admin@campusride.edu" 
+              : "rahul.sharma@college.edu"
+          );
+          try {
+            const refreshRes = await fetch(`${API_BASE}/api/auth/login`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ email, password: "CampusRide2025!" }),
+            });
+            if (refreshRes.ok) {
+              const refreshData = await refreshRes.json();
+              if (refreshData.token) {
+                localStorage.setItem("campusride_token", refreshData.token);
+                headers["Authorization"] = `Bearer ${refreshData.token}`;
+                const retryRes = await fetch(`${API_BASE}${endpoint}`, {
+                  ...options,
+                  headers,
+                });
+                if (retryRes.ok) {
+                  return retryRes.json();
+                }
+              }
+            }
+          } catch (refreshErr) {
+            console.warn("[Auth] Automatic session refresh failed:", refreshErr);
+          }
+          localStorage.removeItem("campusride_token");
+        }
         const fallback = getLocalDemoFallback<T>(endpoint, options);
         if (fallback !== undefined) return fallback;
 

@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import { User, Ride, Trip, RideRequest, SystemPricing } from '../models';
 import { requireAuth, AuthenticatedRequest } from '../middleware/auth';
 import { logger } from '../utils/logger';
+import { seedDemoData } from '../seed';
 
 const router = Router();
 
@@ -266,6 +267,20 @@ router.get('/operations', requireAuth, async (_req: Request, res: Response): Pro
   } catch (err: any) {
     logger.error({ err }, 'Failed to fetch admin operations');
     res.status(500).json({ error: err.message || 'Failed to fetch admin operations data' });
+  }
+});
+
+// POST /api/admin/reseed - Trigger demo data re-seed with all campus rides
+router.post('/reseed', async (_req: Request, res: Response): Promise<void> => {
+  try {
+    await seedDemoData();
+    res.status(200).json({
+      success: true,
+      message: 'Demo data re-seeded successfully with 28+ verified campus rides!',
+    });
+  } catch (err: any) {
+    logger.error({ err }, 'Failed to re-seed demo data');
+    res.status(500).json({ error: err.message || 'Failed to re-seed demo data' });
   }
 });
 

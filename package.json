@@ -5,10 +5,12 @@
   "description": "CampusRide - Verified Student Carpool & Commute-Matching Platform",
   "scripts": {
     "install:all": "npm --prefix server install && npm --prefix client install",
+    "dev": "npm --prefix client run dev",
     "dev:server": "npm --prefix server run dev",
     "dev:client": "npm --prefix client run dev",
     "test:server": "npm --prefix server test",
     "seed": "npm --prefix server run seed",
+    "build": "npm --prefix client run build",
     "build:client": "npm --prefix client run build",
     "build:server": "npm --prefix server run build"
   }

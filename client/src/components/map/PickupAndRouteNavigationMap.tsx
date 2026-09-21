@@ -14,7 +14,16 @@ import {
   Route as RouteIcon,
   Navigation2,
   Check,
+  ArrowUpDown,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react';
+
+export interface RouteTurnStep {
+  icon: 'depart' | 'straight' | 'turn-left' | 'turn-right' | 'bridge' | 'arrive';
+  instruction: string;
+  distanceText: string;
+}
 
 export interface RouteCorridorOption {
   id: string;
@@ -27,6 +36,8 @@ export interface RouteCorridorOption {
   viaWaypoints: string[];
   latLngs: [number, number][];
   color: string;
+  fuelEstimateInr: number;
+  turnSteps?: RouteTurnStep[];
 }
 
 export interface PickupLocationGuide {
@@ -110,47 +121,58 @@ const REAL_SELAQUI_HIGHWAY_ROAD: [number, number][] = [
   [30.34321, 77.9448],
 ];
 
+// Real paved local connector road via Kehri Gaon avoiding Nanda Ki Chowki bridge bottlenecks
+const REAL_KEHRI_GAON_ROAD: [number, number][] = [
+  [30.33397, 77.96224], [30.3344, 77.9610], [30.3352, 77.9592], [30.3361, 77.9575],
+  [30.3370, 77.9555], [30.3382, 77.9532], [30.3395, 77.9510], [30.3408, 77.9490],
+  [30.3418, 77.9472], [30.3426, 77.9458], [30.34321, 77.9448],
+];
+
 export const INITIAL_CORRIDORS: RouteCorridorOption[] = [
   {
     id: 'chakrata_bridge',
     name: 'Via Chakrata Road (Bridge Route)',
     tag: 'Fastest / Primary Bridge',
     distanceKm: 3.0,
-    durationMinutes: 8,
+    durationMinutes: 6,
     trafficStatus: 'light',
     description: 'Direct paved road via Premnagar Market, crosses the Tons/Asan river over Nanda Ki Chowki Bridge',
     viaWaypoints: ['Premnagar Market', 'Nanda Ki Chowki Bridge', 'Arcadia Grant Blvd'],
     latLngs: REAL_CHAKRATA_BRIDGE_ROAD,
     color: '#1a73e8', // Google Blue
+    fuelEstimateInr: 10,
+    turnSteps: [
+      { icon: 'depart', instruction: 'Depart east towards Premnagar Market on Chakrata Road', distanceText: '400 m' },
+      { icon: 'straight', instruction: 'Continue on NH 72 towards Nanda Ki Chowki', distanceText: '1.4 km' },
+      { icon: 'bridge', instruction: 'Cross Tons/Asan River over Nanda Ki Chowki Bridge', distanceText: '300 m' },
+      { icon: 'turn-right', instruction: 'Turn right onto Uttaranchal University Boulevard (Arcadia Grant)', distanceText: '700 m' },
+      { icon: 'arrive', instruction: 'Arrive at Campus Carpool Bay', distanceText: '200 m' },
+    ],
   },
   {
-    id: 'suddhowala_bridge',
-    name: 'Via Suddhowala Student Link',
-    tag: 'Scenic / PG Cluster',
-    distanceKm: 5.9,
-    durationMinutes: 14,
+    id: 'kehri_gaon_link',
+    name: 'Via Kehri Gaon Paved Link & Arcadia Grant',
+    tag: 'Local Alternate / Low Traffic',
+    distanceKm: 3.2,
+    durationMinutes: 7,
     trafficStatus: 'light',
-    description: 'Quiet internal route via Suddhowala student residences, crosses bridge into campus north gate',
-    viaWaypoints: ['Suddhowala Junction', 'Arcadia West Road', 'North University Gate'],
-    latLngs: REAL_SUDDHOWALA_BRIDGE_ROAD,
+    description: 'Smooth paved local connector via Kehri Gaon, bypassing the central market and bridge congestion',
+    viaWaypoints: ['Premnagar West Link', 'Kehri Gaon Paved Road', 'Arcadia South Approach'],
+    latLngs: REAL_KEHRI_GAON_ROAD,
     color: '#0f9d58', // Google Green
-  },
-  {
-    id: 'selaqui_expressway',
-    name: 'Via Selaqui Outer Corridor',
-    tag: 'Western Highway Bypass',
-    distanceKm: 11.5,
-    durationMinutes: 18,
-    trafficStatus: 'light',
-    description: 'Wide 4-lane highway connecting western industrial corridor and campus perimeter road',
-    viaWaypoints: ['Selaqui Pharma Zone', 'Central Highway NH 72', 'Main Campus Approach'],
-    latLngs: REAL_SELAQUI_HIGHWAY_ROAD,
-    color: '#9333ea', // Purple
+    fuelEstimateInr: 12,
+    turnSteps: [
+      { icon: 'depart', instruction: 'Depart via Premnagar West residential connector', distanceText: '500 m' },
+      { icon: 'turn-left', instruction: 'Follow Kehri Gaon paved link avoiding highway bottlenecks', distanceText: '1.5 km' },
+      { icon: 'straight', instruction: 'Cross Arcadia Grant south perimeter approach', distanceText: '900 m' },
+      { icon: 'arrive', instruction: 'Arrive at Campus Destination Porch', distanceText: '300 m' },
+    ],
   },
 ];
 
+
 // Known Geo Coordinates for Dehradun & Uttaranchal University
-const GEO_COORDINATES: Record<string, [number, number]> = {
+export const GEO_COORDINATES: Record<string, [number, number]> = {
   uit: [30.3432, 77.9448],
   uscs: [30.3428, 77.9456],
   bba: [30.342, 77.9461],
@@ -165,6 +187,21 @@ const GEO_COORDINATES: Record<string, [number, number]> = {
   clocktower: [30.3256, 78.0437],
   nandakichowki: [30.34, 77.953],
 };
+
+// Common Presets for Google Maps Origin/Destination Dropdown
+export const POPULAR_LOCATIONS: { name: string; key: string; coords: [number, number]; type: 'origin' | 'dest' | 'both' }[] = [
+  { name: 'Selaqui Industrial & Institutional Hub', key: 'selaqui', coords: [30.3685, 77.854], type: 'both' },
+  { name: 'Premnagar Chowk Market', key: 'premnagar', coords: [30.334, 77.962], type: 'both' },
+  { name: 'Suddhowala Chowk (Student PG Hub)', key: 'suddhowala', coords: [30.3475, 77.932], type: 'both' },
+  { name: 'Ballupur Chowk (City Entrance)', key: 'ballupur', coords: [30.3395, 78.0125], type: 'both' },
+  { name: 'Clock Tower (Ghanta Ghar)', key: 'clocktower', coords: [30.3256, 78.0437], type: 'both' },
+  { name: 'ISBT Dehradun', key: 'isbt', coords: [30.2885, 78.008], type: 'both' },
+  { name: 'UIT Building (Uttaranchal Institute of Technology)', key: 'uit', coords: [30.3432, 77.9448], type: 'both' },
+  { name: 'USCS Building (School of Computing Sciences)', key: 'uscs', coords: [30.3428, 77.9456], type: 'both' },
+  { name: 'BBA Building (Uttaranchal Institute of Management)', key: 'bba', coords: [30.342, 77.9461], type: 'both' },
+  { name: 'Central Academic Library & Law Block', key: 'library', coords: [30.3425, 77.945], type: 'both' },
+  { name: 'Campus Gate 1 (Main Entrance, Premnagar Road)', key: 'gate1', coords: [30.3415, 77.944], type: 'both' },
+];
 
 // Campus Building Guides with Walking Steps
 export const CAMPUS_BUILDING_GUIDES: Record<string, PickupLocationGuide> = {
@@ -263,6 +300,8 @@ interface Props {
   selectedRouteId?: string;
   pickupBuildingKey?: 'uit' | 'uscs' | 'bba' | 'gate1' | 'library';
   compact?: boolean;
+  onOriginChange?: (origin: string) => void;
+  onDestinationChange?: (destination: string) => void;
 }
 
 // Custom Google Maps style SVG pin icons
@@ -306,6 +345,42 @@ function createBuildingMarkerIcon(code: string, active = false) {
   });
 }
 
+// Mathematical route snapping ensuring the route line ALWAYS connects directly to Origin and Destination pins with zero gap
+function snapRouteEndpoints(
+  latLngs: [number, number][],
+  orig: [number, number],
+  dest: [number, number]
+): [number, number][] {
+  if (!latLngs || latLngs.length === 0) return [orig, dest];
+  let points = latLngs.map(([lat, lng]) => [lat, lng] as [number, number]);
+
+  // If the path is running backwards (first point closer to dest than orig), reverse it!
+  const dStartToOrig = Math.hypot(points[0][0] - orig[0], points[0][1] - orig[1]);
+  const dStartToDest = Math.hypot(points[0][0] - dest[0], points[0][1] - dest[1]);
+  if (dStartToDest < dStartToOrig) {
+    points.reverse();
+  }
+
+  // Prepend origin if not very close, or snap point 0 directly to orig
+  const dOrig = Math.hypot(points[0][0] - orig[0], points[0][1] - orig[1]);
+  if (dOrig > 0.003) {
+    points.unshift(orig);
+  } else {
+    points[0] = orig;
+  }
+
+  // Append destination if not very close, or snap last point directly to dest
+  const lastIdx = points.length - 1;
+  const dDest = Math.hypot(points[lastIdx][0] - dest[0], points[lastIdx][1] - dest[1]);
+  if (dDest > 0.003) {
+    points.push(dest);
+  } else {
+    points[lastIdx] = dest;
+  }
+
+  return points;
+}
+
 export const PickupAndRouteNavigationMap: React.FC<Props> = ({
   originText = 'Premnagar Chowk Market',
   destinationText = 'UIT Building (Uttaranchal Institute of Technology)',
@@ -314,13 +389,20 @@ export const PickupAndRouteNavigationMap: React.FC<Props> = ({
   selectedRouteId = 'chakrata_bridge',
   pickupBuildingKey,
   compact = false,
+  onOriginChange,
+  onDestinationChange,
 }) => {
   const [activeTab, setActiveTab] = useState<'route_choice' | 'walk_to_pickup'>(initialMode);
+  const [currentOrigin, setCurrentOrigin] = useState<string>(originText);
+  const [currentDest, setCurrentDest] = useState<string>(destinationText);
   const [selectedCorridorId, setSelectedCorridorId] = useState<string>(selectedRouteId);
   const [mapLayerType, setMapLayerType] = useState<'google_streets' | 'google_satellite' | 'osm'>('google_streets');
   const [walkingStepIndex, setWalkingStepIndex] = useState<number>(0);
+  const [showTurnByTurn, setShowTurnByTurn] = useState<boolean>(false);
   const [corridors, setCorridors] = useState<RouteCorridorOption[]>(INITIAL_CORRIDORS);
   const [loadingRoutes, setLoadingRoutes] = useState<boolean>(false);
+  const [customOriginCoords, setCustomOriginCoords] = useState<[number, number] | null>(null);
+  const [customDestCoords, setCustomDestCoords] = useState<[number, number] | null>(null);
 
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
@@ -328,20 +410,29 @@ export const PickupAndRouteNavigationMap: React.FC<Props> = ({
   const tileLayerRef = useRef<L.TileLayer | null>(null);
   const lastFittedBoundsKeyRef = useRef<string>('');
 
+  // Sync state if props change from outside
+  useEffect(() => {
+    setCurrentOrigin(originText);
+  }, [originText]);
+
+  useEffect(() => {
+    setCurrentDest(destinationText);
+  }, [destinationText]);
+
   // Derive pickup guide based on props or heuristics
   const effectiveBuildingKey =
     pickupBuildingKey ||
-    (destinationText.toLowerCase().includes('uscs')
+    (currentDest.toLowerCase().includes('uscs')
       ? 'uscs'
-      : destinationText.toLowerCase().includes('bba') || destinationText.toLowerCase().includes('management')
+      : currentDest.toLowerCase().includes('bba') || currentDest.toLowerCase().includes('management')
       ? 'bba'
-      : destinationText.toLowerCase().includes('gate')
+      : currentDest.toLowerCase().includes('gate')
       ? 'gate1'
-      : destinationText.toLowerCase().includes('library') || destinationText.toLowerCase().includes('law')
+      : currentDest.toLowerCase().includes('library') || currentDest.toLowerCase().includes('law')
       ? 'library'
-      : originText.toLowerCase().includes('uscs')
+      : currentOrigin.toLowerCase().includes('uscs')
       ? 'uscs'
-      : originText.toLowerCase().includes('bba')
+      : currentOrigin.toLowerCase().includes('bba')
       ? 'bba'
       : 'uit');
 
@@ -365,105 +456,346 @@ export const PickupAndRouteNavigationMap: React.FC<Props> = ({
     return fallback;
   };
 
-  const originCoords = resolveCoordinates(originText, GEO_COORDINATES.premnagar);
-  const destCoords = resolveCoordinates(destinationText, GEO_COORDINATES.uit);
+  const originCoords = customOriginCoords || resolveCoordinates(currentOrigin, GEO_COORDINATES.premnagar);
+  const destCoords = customDestCoords || resolveCoordinates(currentDest, GEO_COORDINATES.uit);
 
-  // Live OSRM Route Fetching for Any Origin & Destination
+  // Generate Realistic Corridors based strictly on selected origin & destination
+  const generateCorridors = (orig: [number, number], dest: [number, number]): RouteCorridorOption[] => {
+    const origText = currentOrigin.toLowerCase();
+    const destText = currentDest.toLowerCase();
+
+    const isSelaqui =
+      origText.includes('selaqui') ||
+      destText.includes('selaqui') ||
+      orig[0] > 30.355 ||
+      dest[0] > 30.355;
+
+    const isClockTower =
+      origText.includes('clock') ||
+      origText.includes('ballupur') ||
+      origText.includes('ghanta') ||
+      destText.includes('clock') ||
+      destText.includes('ballupur') ||
+      destText.includes('ghanta') ||
+      orig[1] > 78.01 ||
+      dest[1] > 78.01;
+
+    const isSuddhowala =
+      (origText.includes('suddhowala') || destText.includes('suddhowala')) &&
+      !isSelaqui;
+
+    if (isSuddhowala) {
+      return [
+        {
+          id: 'suddhowala_direct_link',
+          name: 'Via Suddhowala Student Concourse (Direct Link)',
+          tag: 'Fastest Student Route',
+          distanceKm: 2.3,
+          durationMinutes: 6,
+          trafficStatus: 'light',
+          description: 'Direct student residential road via Arcadia West connecting Suddhowala directly into campus concourse',
+          viaWaypoints: ['Suddhowala Chowk', 'Arcadia West Hostels', 'North Campus Gate'],
+          latLngs: snapRouteEndpoints(
+            [
+              orig,
+              [30.34756, 77.93391], [30.34695, 77.93619], [30.34549, 77.93624],
+              [30.34521, 77.93796], [30.34532, 77.93995], [30.34566, 77.94249],
+              [30.34544, 77.94385], [30.3450, 77.9454], [30.34448, 77.94522],
+              [30.34407, 77.94451], dest,
+            ],
+            orig,
+            dest
+          ),
+          color: '#1a73e8', // Google Blue
+          fuelEstimateInr: 10,
+          turnSteps: [
+            { icon: 'depart', instruction: 'Depart from Suddhowala Student PG Hub', distanceText: '200 m' },
+            { icon: 'straight', instruction: 'Head east along Arcadia West student residential road', distanceText: '1.2 km' },
+            { icon: 'bridge', instruction: 'Cross campus north river culvert bridge', distanceText: '300 m' },
+            { icon: 'turn-right', instruction: 'Enter University Academic Concourse', distanceText: '400 m' },
+            { icon: 'arrive', instruction: 'Arrive at Campus Destination Porch', distanceText: '200 m' },
+          ],
+        },
+        {
+          id: 'suddhowala_chakrata_bridge',
+          name: 'Via Chakrata Highway & Nanda Ki Chowki Bridge',
+          tag: 'Alternative Main Highway',
+          distanceKm: 4.2,
+          durationMinutes: 10,
+          trafficStatus: 'light',
+          description: 'Heads south to merge onto NH 72 Chakrata Road and crosses Tons River via Nanda Ki Chowki Bridge',
+          viaWaypoints: ['Suddhowala Link', 'NH 72 Chakrata Rd', 'Nanda Ki Chowki Bridge'],
+          latLngs: snapRouteEndpoints(
+            [
+              orig,
+              [30.346, 77.936], [30.344, 77.94], [30.341, 77.95],
+              [30.3408, 77.9551], [30.34254, 77.9547], [30.3437, 77.9514],
+              [30.3445, 77.9477], [30.3441, 77.9445], dest,
+            ],
+            orig,
+            dest
+          ),
+          color: '#0f9d58', // Green
+          fuelEstimateInr: 15,
+          turnSteps: [
+            { icon: 'depart', instruction: 'Head south from Suddhowala onto Chakrata connector', distanceText: '800 m' },
+            { icon: 'straight', instruction: 'Merge onto NH 72 towards Nanda Ki Chowki Bridge', distanceText: '1.8 km' },
+            { icon: 'bridge', instruction: 'Cross Tons/Asan River via Nanda Ki Chowki Bridge', distanceText: '400 m' },
+            { icon: 'turn-right', instruction: 'Turn onto Uttaranchal University Boulevard', distanceText: '900 m' },
+            { icon: 'arrive', instruction: 'Arrive at Campus Shelter Bay', distanceText: '300 m' },
+          ],
+        },
+      ];
+    }
+
+    if (isSelaqui) {
+      return [
+        {
+          id: 'selaqui_expressway',
+          name: 'Via NH 72 Chakrata Expressway (Main Corridor)',
+          tag: 'Fastest Paved Highway',
+          distanceKm: 11.5,
+          durationMinutes: 18,
+          trafficStatus: 'light',
+          description: 'Direct 4-lane highway via NH 72, crossing Nanda Ki Chowki bridge directly into campus boulevard',
+          viaWaypoints: ['Selaqui Pharma Hub', 'Central NH 72', 'Arcadia Grant Blvd'],
+          latLngs: snapRouteEndpoints(REAL_SELAQUI_HIGHWAY_ROAD, orig, dest),
+          color: '#1a73e8', // Google Blue
+          fuelEstimateInr: 28,
+          turnSteps: [
+            { icon: 'depart', instruction: 'Start from Selaqui Industrial & Institutional Hub on NH 72', distanceText: '500 m' },
+            { icon: 'straight', instruction: 'Follow NH 72 four-lane highway east towards Nanda Ki Chowki', distanceText: '8.2 km' },
+            { icon: 'bridge', instruction: 'Cross Tons/Asan River approach near Nanda Ki Chowki Bridge', distanceText: '600 m' },
+            { icon: 'turn-right', instruction: 'Turn right onto Uttaranchal University Boulevard (Arcadia Grant)', distanceText: '1.7 km' },
+            { icon: 'arrive', instruction: 'Arrive at UIT Student Carpool Bay & EV Hub', distanceText: '500 m' },
+          ],
+        },
+        {
+          id: 'selaqui_suddhowala_link',
+          name: 'Via Suddhowala Student Link & Hostels',
+          tag: 'Scenic / Student PG Cluster',
+          distanceKm: 13.2,
+          durationMinutes: 22,
+          trafficStatus: 'light',
+          description: 'Alternative link passing Suddhowala student residences, cafes, and internal campus north access',
+          viaWaypoints: ['Selaqui East', 'Suddhowala Chowk Junction', 'North University Gate'],
+          latLngs: snapRouteEndpoints(
+            [
+              ...REAL_SELAQUI_HIGHWAY_ROAD.slice(0, 32),
+              [30.3475, 77.9339], [30.3469, 77.9362], [30.3455, 77.9362],
+              [30.3452, 77.938], [30.3453, 77.94], [30.3457, 77.9425],
+              [30.345, 77.9454], [30.3441, 77.9445], [30.3432, 77.9448],
+            ],
+            orig,
+            dest
+          ),
+          color: '#0f9d58', // Green
+          fuelEstimateInr: 32,
+          turnSteps: [
+            { icon: 'depart', instruction: 'Depart Selaqui Hub heading east on highway', distanceText: '6.5 km' },
+            { icon: 'turn-left', instruction: 'Turn onto Suddhowala Student PG residential corridor', distanceText: '3.1 km' },
+            { icon: 'bridge', instruction: 'Cross North River Bridge into campus perimeter', distanceText: '800 m' },
+            { icon: 'turn-right', instruction: 'Enter University North Concourse', distanceText: '2.1 km' },
+            { icon: 'arrive', instruction: 'Arrive at Student Drop-off Zone', distanceText: '700 m' },
+          ],
+        },
+      ];
+    }
+
+    if (isClockTower) {
+      return [
+        {
+          id: 'ballupur_chakrata_bridge',
+          name: 'Via Ballupur Flyover & Chakrata Road (Main Highway)',
+          tag: 'Fastest City Route',
+          distanceKm: 8.8,
+          durationMinutes: 19,
+          trafficStatus: 'moderate',
+          description: 'Major arterial road from city center over Ballupur Flyover, through Premnagar and river bridge',
+          viaWaypoints: ['Clock Tower / Ballupur', 'Premnagar Market', 'Nanda Ki Chowki Bridge'],
+          latLngs: snapRouteEndpoints(
+            [
+              [30.3395, 78.0125], [30.338, 77.995], [30.336, 77.98],
+              [30.334, 77.962], ...REAL_CHAKRATA_BRIDGE_ROAD,
+            ],
+            orig,
+            dest
+          ),
+          color: '#1a73e8',
+          fuelEstimateInr: 25,
+          turnSteps: [
+            { icon: 'depart', instruction: 'Depart Clock Tower / Ballupur heading west on Chakrata Road', distanceText: '1.2 km' },
+            { icon: 'straight', instruction: 'Ascend Ballupur Flyover and continue straight towards Premnagar', distanceText: '4.5 km' },
+            { icon: 'bridge', instruction: 'Cross Tons River via Nanda Ki Chowki Bridge', distanceText: '400 m' },
+            { icon: 'turn-right', instruction: 'Turn right onto Uttaranchal University Boulevard', distanceText: '1.7 km' },
+            { icon: 'arrive', instruction: 'Arrive at Campus Carpool Bay', distanceText: '1.0 km' },
+          ],
+        },
+        {
+          id: 'shimla_bypass_link',
+          name: 'Via Shimla Bypass & Southern Ring Road',
+          tag: 'Alternative Bypass',
+          distanceKm: 11.2,
+          durationMinutes: 24,
+          trafficStatus: 'light',
+          description: 'Smooth ring road avoiding city center choke points with dedicated campus approach',
+          viaWaypoints: ['Shimla Bypass Road', 'Subharti Link', 'Arcadia West'],
+          latLngs: snapRouteEndpoints(
+            [
+              [30.3395, 78.0125], [30.32, 78.00], [30.315, 77.975],
+              [30.33, 77.955], [30.34, 77.95], [30.3432, 77.9448],
+            ],
+            orig,
+            dest
+          ),
+          color: '#0f9d58',
+          fuelEstimateInr: 30,
+          turnSteps: [
+            { icon: 'depart', instruction: 'Head south-west towards Shimla Bypass junction', distanceText: '2.8 km' },
+            { icon: 'straight', instruction: 'Follow southern ring road bypass', distanceText: '5.6 km' },
+            { icon: 'bridge', instruction: 'Cross Asan River southern bridge', distanceText: '600 m' },
+            { icon: 'turn-right', instruction: 'Turn onto university approach boulevard', distanceText: '1.5 km' },
+            { icon: 'arrive', instruction: 'Arrive at UIT Building', distanceText: '700 m' },
+          ],
+        },
+      ];
+    }
+
+    // Default: Campus <-> Premnagar Commute (Direct 3.0 km)
+    return [
+      {
+        id: 'chakrata_bridge',
+        name: 'Via Chakrata Road (Bridge Route)',
+        tag: 'Fastest / Primary Bridge',
+        distanceKm: 3.0,
+        durationMinutes: 6,
+        trafficStatus: 'light',
+        description: 'Direct paved road via Premnagar Market, crosses the Tons/Asan river over Nanda Ki Chowki Bridge',
+        viaWaypoints: ['Premnagar Market', 'Nanda Ki Chowki Bridge', 'Arcadia Grant Blvd'],
+        latLngs: snapRouteEndpoints(REAL_CHAKRATA_BRIDGE_ROAD, orig, dest),
+        color: '#1a73e8',
+        fuelEstimateInr: 10,
+        turnSteps: [
+          { icon: 'depart', instruction: 'Depart along Chakrata Road (NH 72)', distanceText: '400 m' },
+          { icon: 'straight', instruction: 'Proceed across NH 72 towards Nanda Ki Chowki', distanceText: '1.4 km' },
+          { icon: 'bridge', instruction: 'Cross Tons/Asan River over Nanda Ki Chowki Bridge', distanceText: '300 m' },
+          { icon: 'turn-right', instruction: 'Turn onto Uttaranchal University Boulevard (Arcadia Grant)', distanceText: '700 m' },
+          { icon: 'arrive', instruction: 'Arrive at Campus Destination Porch', distanceText: '200 m' },
+        ],
+      },
+      {
+        id: 'kehri_gaon_link',
+        name: 'Via Kehri Gaon Paved Link & Arcadia Grant',
+        tag: 'Local Alternate / Low Traffic',
+        distanceKm: 3.2,
+        durationMinutes: 7,
+        trafficStatus: 'light',
+        description: 'Smooth paved local connector via Kehri Gaon, bypassing the central market and bridge congestion',
+        viaWaypoints: ['Premnagar West Link', 'Kehri Gaon Paved Road', 'Arcadia South Approach'],
+        latLngs: snapRouteEndpoints(REAL_KEHRI_GAON_ROAD, orig, dest),
+        color: '#0f9d58',
+        fuelEstimateInr: 12,
+        turnSteps: [
+          { icon: 'depart', instruction: 'Depart via Premnagar West residential connector', distanceText: '500 m' },
+          { icon: 'turn-left', instruction: 'Follow Kehri Gaon paved link avoiding highway bottlenecks', distanceText: '1.5 km' },
+          { icon: 'straight', instruction: 'Cross Arcadia Grant south perimeter approach', distanceText: '900 m' },
+          { icon: 'arrive', instruction: 'Arrive at Campus University Bay', distanceText: '300 m' },
+        ],
+      },
+    ];
+  };
+
+  // Live OSRM Route Fetching with Fallback to High-Precision Realistic Corridors
   useEffect(() => {
     let isCancelled = false;
 
     async function fetchDynamicRoadRoutes() {
       try {
         setLoadingRoutes(true);
-        // Query OSRM driving engine
         const originLngLat = `${originCoords[1]},${originCoords[0]}`;
         const destLngLat = `${destCoords[1]},${destCoords[0]}`;
 
-        // 1. Direct real road route
-        const directUrl = `https://router.project-osrm.org/route/v1/driving/${originLngLat};${destLngLat}?overview=full&geometries=geojson&alternatives=true`;
+        // Direct driving query with alternatives
+        const directUrl = `https://router.project-osrm.org/route/v1/driving/${originLngLat};${destLngLat}?overview=full&geometries=geojson&alternatives=true&steps=true`;
         const directRes = await fetch(directUrl);
         const directData = await directRes.json();
 
         if (isCancelled) return;
 
-        if (directData.routes && directData.routes.length > 0) {
-          const generatedCorridors: RouteCorridorOption[] = [];
+        const baseCorridors = generateCorridors(originCoords, destCoords);
 
-          // Primary Route from OSRM
+        if (directData.routes && directData.routes.length > 0) {
           const primary = directData.routes[0];
           const primaryCoords: [number, number][] = primary.geometry.coordinates.map(
             ([lng, lat]: [number, number]) => [lat, lng]
           );
 
-          generatedCorridors.push({
-            id: 'osrm_primary',
-            name: 'Via Chakrata Road (Main Bridge)',
-            tag: 'Fastest Paved Road',
-            distanceKm: +(primary.distance / 1000).toFixed(1),
-            durationMinutes: Math.max(2, Math.round(primary.duration / 60)),
-            trafficStatus: 'light',
-            description: 'Direct road route crossing Tons/Asan river via the official Nanda Ki Chowki bridge',
-            viaWaypoints: ['Chakrata Road', 'Nanda Ki Chowki Bridge', 'Campus Approach Road'],
-            latLngs: primaryCoords,
-            color: '#1a73e8', // Google Blue
-          });
+          // Update primary corridor with live OSRM data while preserving clean identity
+          baseCorridors[0].latLngs = snapRouteEndpoints(primaryCoords, originCoords, destCoords);
+          baseCorridors[0].distanceKm = +(primary.distance / 1000).toFixed(1);
+          baseCorridors[0].durationMinutes = Math.max(3, Math.round(primary.duration / 60));
+          baseCorridors[0].fuelEstimateInr = Math.max(10, Math.round((primary.distance / 1000) * 3));
 
-          // Secondary alternative from OSRM if present
-          if (directData.routes[1]) {
+          // If OSRM returned alternative, check whether it is a legitimate local detour (< 1.35x)
+          if (directData.routes[1] && baseCorridors[1]) {
             const alt = directData.routes[1];
-            const altCoords: [number, number][] = alt.geometry.coordinates.map(
-              ([lng, lat]: [number, number]) => [lat, lng]
-            );
-            generatedCorridors.push({
-              id: 'osrm_alt_1',
-              name: 'Via Subharti & Cantonment Link',
-              tag: 'Alternative Bridge Route',
-              distanceKm: +(alt.distance / 1000).toFixed(1),
-              durationMinutes: Math.max(3, Math.round(alt.duration / 60)),
-              trafficStatus: 'moderate',
-              description: 'Alternative road corridor passing local university link roads',
-              viaWaypoints: ['Cantonment Bypass', 'River Bridge', 'Campus Perimeter'],
-              latLngs: altCoords,
-              color: '#0f9d58', // Green
-            });
-          }
-
-          // 2. Query via Suddhowala Hub to give user a distinct second corridor choice
-          try {
-            const suddhowalaLngLat = `${GEO_COORDINATES.suddhowala[1]},${GEO_COORDINATES.suddhowala[0]}`;
-            const viaSuddhowalaUrl = `https://router.project-osrm.org/route/v1/driving/${originLngLat};${suddhowalaLngLat};${destLngLat}?overview=full&geometries=geojson`;
-            const viaRes = await fetch(viaSuddhowalaUrl);
-            const viaData = await viaRes.json();
-            if (viaData.routes && viaData.routes.length > 0) {
-              const viaRoute = viaData.routes[0];
-              const viaCoords: [number, number][] = viaRoute.geometry.coordinates.map(
-                ([lng, lat]: [number, number]) => [lat, lng]
+            const altDistKm = +(alt.distance / 1000).toFixed(1);
+            if (altDistKm <= baseCorridors[0].distanceKm * 1.35) {
+              baseCorridors[1].latLngs = snapRouteEndpoints(
+                alt.geometry.coordinates.map(([lng, lat]: [number, number]) => [lat, lng]),
+                originCoords,
+                destCoords
               );
-              generatedCorridors.push({
-                id: 'osrm_via_suddhowala',
-                name: 'Via Suddhowala Student Link (North Bridge)',
-                tag: 'Scenic / Student Hub',
-                distanceKm: +(viaRoute.distance / 1000).toFixed(1),
-                durationMinutes: Math.max(4, Math.round(viaRoute.duration / 60)),
-                trafficStatus: 'light',
-                description: 'Corridor through Suddhowala student residences & hostels, crosses north river bridge',
-                viaWaypoints: ['Suddhowala Chowk', 'North Campus Bridge', 'Hostel Ring'],
-                latLngs: viaCoords,
-                color: '#8b5cf6', // Violet
-              });
+              baseCorridors[1].distanceKm = altDistKm;
+              baseCorridors[1].durationMinutes = Math.max(4, Math.round(alt.duration / 60));
+              baseCorridors[1].fuelEstimateInr = Math.max(10, Math.round(altDistKm * 3));
             }
-          } catch {
-            // Suddhowala query optional
-          }
-
-          if (generatedCorridors.length > 0) {
-            setCorridors(generatedCorridors);
-            setSelectedCorridorId(generatedCorridors[0].id);
           }
         }
-      } catch (err) {
-        console.warn('[Routing] Live OSRM query failed, using precomputed high-precision bridge routes', err);
-        setCorridors(INITIAL_CORRIDORS);
+
+        // Strict filter: only retain corridors that strictly fit the commute distance and geographical context
+        const primaryDist = baseCorridors[0]?.distanceKm || 3.0;
+        const origLower = currentOrigin.toLowerCase();
+        const destLower = currentDest.toLowerCase();
+        const involvesSelaqui = origLower.includes('selaqui') || destLower.includes('selaqui');
+        const involvesSuddhowala = origLower.includes('suddhowala') || destLower.includes('suddhowala');
+
+        const validCorridors = baseCorridors.filter((c, idx) => {
+          if (idx === 0) return true; // keep primary route
+          // Distance guardrail: Detours > 35% are rejected
+          if (c.distanceKm > primaryDist * 1.35) return false;
+          // Context guardrail: Do not show Selaqui or Suddhowala when trip does not involve them
+          if (!involvesSelaqui && (c.name.toLowerCase().includes('selaqui') || c.id.includes('selaqui'))) return false;
+          if (!involvesSuddhowala && !involvesSelaqui && (c.name.toLowerCase().includes('suddhowala') || c.id.includes('suddhowala'))) return false;
+          return true;
+        });
+
+        const finalCorridors = validCorridors.length > 0 ? validCorridors : [baseCorridors[0]];
+        setCorridors(finalCorridors);
+        if (!finalCorridors.some((c) => c.id === selectedCorridorIdRef.current)) {
+          setSelectedCorridorId(finalCorridors[0].id);
+        }
+      } catch {
+        const fallback = generateCorridors(originCoords, destCoords);
+        const primaryDist = fallback[0]?.distanceKm || 3.0;
+        const origLower = currentOrigin.toLowerCase();
+        const destLower = currentDest.toLowerCase();
+        const involvesSelaqui = origLower.includes('selaqui') || destLower.includes('selaqui');
+        const involvesSuddhowala = origLower.includes('suddhowala') || destLower.includes('suddhowala');
+
+        const validFallback = fallback.filter((c, idx) => {
+          if (idx === 0) return true;
+          if (c.distanceKm > primaryDist * 1.35) return false;
+          if (!involvesSelaqui && (c.name.toLowerCase().includes('selaqui') || c.id.includes('selaqui'))) return false;
+          if (!involvesSuddhowala && !involvesSelaqui && (c.name.toLowerCase().includes('suddhowala') || c.id.includes('suddhowala'))) return false;
+          return true;
+        });
+
+        const finalFallback = validFallback.length > 0 ? validFallback : [fallback[0]];
+        setCorridors(finalFallback);
+        if (!finalFallback.some((c) => c.id === selectedCorridorIdRef.current)) {
+          setSelectedCorridorId(finalFallback[0].id);
+        }
       } finally {
         if (!isCancelled) setLoadingRoutes(false);
       }
@@ -474,9 +806,9 @@ export const PickupAndRouteNavigationMap: React.FC<Props> = ({
     return () => {
       isCancelled = true;
     };
-  }, [originText, destinationText]);
+  }, [currentOrigin, currentDest, customOriginCoords, customDestCoords]);
 
-  const currentCorridor = corridors.find(c => c.id === selectedCorridorId) || corridors[0];
+  const currentCorridor = corridors.find((c) => c.id === selectedCorridorId) || corridors[0];
   const corridorsRef = useRef(corridors);
   corridorsRef.current = corridors;
   const activeTabRef = useRef(activeTab);
@@ -489,7 +821,7 @@ export const PickupAndRouteNavigationMap: React.FC<Props> = ({
     if (!mapContainerRef.current) return;
 
     if (!mapInstanceRef.current) {
-      const initialCenter: [number, number] = [30.3426, 77.9452]; // Uttaranchal University center
+      const initialCenter: [number, number] = [30.3426, 77.9452];
       const map = L.map(mapContainerRef.current, {
         center: initialCenter,
         zoom: 14,
@@ -499,11 +831,10 @@ export const PickupAndRouteNavigationMap: React.FC<Props> = ({
         boxZoom: false,
       });
 
-      // Explicitly disable accidental click zooms
       map.doubleClickZoom.disable();
       map.boxZoom.disable();
 
-      // Click anywhere on map canvas to choose the closest route without zooming
+      // Click anywhere near roads to select the closest route
       map.on('click', (e: L.LeafletMouseEvent) => {
         if (activeTabRef.current !== 'route_choice') return;
         const curCorridors = corridorsRef.current;
@@ -522,18 +853,18 @@ export const PickupAndRouteNavigationMap: React.FC<Props> = ({
           });
         });
 
-        if (closest && closest.id !== selectedCorridorIdRef.current) {
+        // Only switch if within 600m of the road
+        if (closest && minDist < 600 && closest.id !== selectedCorridorIdRef.current) {
           handleCorridorSelect(closest);
         }
       });
 
-      // Google Maps standard road tiles
       const tileUrl =
         mapLayerType === 'google_satellite'
           ? 'https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}&hl=en'
           : mapLayerType === 'osm'
           ? 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'
-          : 'https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}&hl=en'; // Google Maps Streets
+          : 'https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}&hl=en';
 
       const tileLayer = L.tileLayer(tileUrl, {
         maxZoom: 20,
@@ -562,7 +893,7 @@ export const PickupAndRouteNavigationMap: React.FC<Props> = ({
     tileLayerRef.current.setUrl(tileUrl);
   }, [mapLayerType]);
 
-  // Render Markers and Interactive Clickable Polylines
+  // Render Markers, Clickable Polylines, and Google Maps Floating Midpoint ETA Pills
   useEffect(() => {
     const map = mapInstanceRef.current;
     const group = layerGroupRef.current;
@@ -574,22 +905,24 @@ export const PickupAndRouteNavigationMap: React.FC<Props> = ({
       const activeCorridor =
         corridors.find((c) => c.id === selectedCorridorId) || corridors[0] || INITIAL_CORRIDORS[0];
 
-      // Draw all UNSELECTED routes as interactive clickable lines
+      // 1. Render all UNSELECTED alternative routes first (behind the active route)
       corridors.forEach((corridor) => {
         if (corridor.id === activeCorridor.id) return;
 
-        // Wide invisible hit target so clicking near the road always selects the route smoothly
-        const hitTarget = L.polyline(corridor.latLngs, {
+        const altSnapped = snapRouteEndpoints(corridor.latLngs, originCoords, destCoords);
+
+        // Wide invisible hit target for effortless road clicking on desktop & touch
+        const hitTarget = L.polyline(altSnapped, {
           color: 'transparent',
-          weight: 24,
+          weight: 28,
           opacity: 0,
         }).addTo(group);
 
-        const altPolyline = L.polyline(corridor.latLngs, {
+        // Gray inactive polyline (Google Maps style)
+        const altPolyline = L.polyline(altSnapped, {
           color: '#64748b',
-          weight: 5,
-          opacity: 0.6,
-          dashArray: '6, 6',
+          weight: 5.5,
+          opacity: 0.65,
         }).addTo(group);
 
         const onRouteClick = (e: L.LeafletMouseEvent) => {
@@ -600,42 +933,134 @@ export const PickupAndRouteNavigationMap: React.FC<Props> = ({
         hitTarget.on('click', onRouteClick);
         altPolyline.on('click', onRouteClick);
 
-        // Hover tooltip on map
-        const tooltipContent = `<b>${corridor.name}</b><br/>${corridor.distanceKm} km • ${corridor.durationMinutes} min<br/><span style="color:#0284c7;font-weight:bold;">👉 Click on road to choose this route</span>`;
+        // Hover feedback
+        hitTarget.on('mouseover', () => {
+          altPolyline.setStyle({ color: '#334155', weight: 7.5, opacity: 0.9 });
+        });
+        hitTarget.on('mouseout', () => {
+          altPolyline.setStyle({ color: '#64748b', weight: 5.5, opacity: 0.65 });
+        });
+
+        const tooltipContent = `<b>${corridor.name}</b><br/>${corridor.distanceKm} km • ${corridor.durationMinutes} min<br/><span style="color:#0284c7;font-weight:bold;">👉 Click road to choose this route</span>`;
         altPolyline.bindTooltip(tooltipContent, { sticky: true });
         hitTarget.bindTooltip(tooltipContent, { sticky: true });
+
+        // Google Maps style Midpoint ETA Badge Pill on the alternative road
+        const midIdx = Math.floor(altSnapped.length * 0.5);
+        const midPoint = altSnapped[midIdx] || altSnapped[0];
+        const diffMinutes = corridor.durationMinutes - activeCorridor.durationMinutes;
+        const diffText = diffMinutes > 0 ? `+${diffMinutes}m` : diffMinutes < 0 ? `${diffMinutes}m` : 'Same time';
+
+        const altBadgeMarker = L.marker(midPoint, {
+          icon: L.divIcon({
+            className: 'google-maps-alt-eta-pill',
+            html: `
+              <div style="
+                display: flex;
+                align-items: center;
+                gap: 4px;
+                background: #ffffff;
+                color: #475569;
+                border: 1.5px solid #cbd5e1;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.22);
+                padding: 4px 9px;
+                border-radius: 9999px;
+                font-family: system-ui, -apple-system, sans-serif;
+                font-size: 11px;
+                font-weight: 700;
+                cursor: pointer;
+                white-space: nowrap;
+                transform: translate(-50%, -50%);
+                user-select: none;
+                transition: transform 0.15s ease, background 0.15s ease;
+              " onmouseover="this.style.transform='translate(-50%, -50%) scale(1.08)'; this.style.borderColor='#94a3b8';" onmouseout="this.style.transform='translate(-50%, -50%) scale(1)'; this.style.borderColor='#cbd5e1';">
+                <span>${corridor.durationMinutes} min</span>
+                <span style="font-size: 10px; color: #64748b; font-weight: 500;">(${diffText})</span>
+              </div>
+            `,
+            iconSize: [0, 0],
+            iconAnchor: [0, 0],
+          }),
+        }).addTo(group);
+
+        altBadgeMarker.on('click', (e) => {
+          L.DomEvent.stopPropagation(e);
+          handleCorridorSelect(corridor);
+        });
+        altBadgeMarker.bindTooltip(`Click to choose ${corridor.name}`, { sticky: true });
       });
 
-      // Draw ACTIVE SELECTED route in bold Google Blue/Green with high visibility
-      const activePolyline = L.polyline(activeCorridor.latLngs, {
-        color: activeCorridor.color,
-        weight: 7,
+      // 2. Render the ACTIVE SELECTED route in bold Google Maps Blue with casing
+      const activeSnapped = snapRouteEndpoints(activeCorridor.latLngs, originCoords, destCoords);
+
+      // White halo/underlay
+      L.polyline(activeSnapped, {
+        color: '#ffffff',
+        weight: 11,
         opacity: 0.95,
       }).addTo(group);
 
-      // Inner glowing dashed line for active selection
-      L.polyline(activeCorridor.latLngs, {
-        color: '#ffffff',
-        weight: 2.5,
-        opacity: 0.8,
-        dashArray: '8, 8',
+      // Primary Blue line
+      const activePolyline = L.polyline(activeSnapped, {
+        color: activeCorridor.color || '#1a73e8',
+        weight: 7.5,
+        opacity: 0.98,
       }).addTo(group);
 
-      activePolyline.on('click', (e: L.LeafletMouseEvent) => {
-        L.DomEvent.stopPropagation(e);
-      });
+      // Subtle inner animated traffic pulse line
+      L.polyline(activeSnapped, {
+        color: '#ffffff',
+        weight: 2.5,
+        opacity: 0.85,
+        dashArray: '8, 12',
+      }).addTo(group);
 
       activePolyline.bindTooltip(
-        `<b>✓ Selected Route: ${activeCorridor.name}</b><br/>${activeCorridor.distanceKm} km • ${activeCorridor.durationMinutes} mins`,
+        `<b>✓ Active Route: ${activeCorridor.name}</b><br/>${activeCorridor.distanceKm} km • ${activeCorridor.durationMinutes} mins`,
         { sticky: true }
       );
+
+      // Active Route Google Maps Midpoint ETA Pill
+      const activeMidIdx = Math.floor(activeSnapped.length * 0.45);
+      const activeMidPoint = activeSnapped[activeMidIdx] || activeSnapped[0];
+
+      L.marker(activeMidPoint, {
+        icon: L.divIcon({
+          className: 'google-maps-active-eta-pill',
+          html: `
+            <div style="
+              display: flex;
+              align-items: center;
+              gap: 5px;
+              background: #1a73e8;
+              color: #ffffff;
+              border: 2px solid #ffffff;
+              box-shadow: 0 4px 16px rgba(26,115,232,0.45);
+              padding: 4px 11px;
+              border-radius: 9999px;
+              font-family: system-ui, -apple-system, sans-serif;
+              font-size: 11px;
+              font-weight: 800;
+              cursor: pointer;
+              white-space: nowrap;
+              transform: translate(-50%, -50%);
+              user-select: none;
+            ">
+              <span>🚗 ${activeCorridor.durationMinutes} min</span>
+              <span style="font-size: 10px; font-weight: 600; opacity: 0.9;">· ${activeCorridor.tag.split('/')[0]}</span>
+            </div>
+          `,
+          iconSize: [0, 0],
+          iconAnchor: [0, 0],
+        }),
+      }).addTo(group);
 
       // Real Bridge Waypoint Indicator
       L.marker([30.34254, 77.9547], {
         icon: L.divIcon({
           className: 'bridge-waypoint-pin',
           html: `
-            <div style="background:#0f172a; color:#38bdf8; padding:3px 7px; border-radius:8px; font-size:10px; font-weight:800; border:1.5px solid #38bdf8; box-shadow:0 3px 8px rgba(0,0,0,0.4); white-space:nowrap; display:flex; align-items:center; gap:3px;">
+            <div style="background:#0f172a; color:#38bdf8; padding:3px 8px; border-radius:8px; font-size:10px; font-weight:800; border:1.5px solid #38bdf8; box-shadow:0 3px 8px rgba(0,0,0,0.4); white-space:nowrap; display:flex; align-items:center; gap:3px;">
               <span>🌉 Nanda Ki Chowki River Bridge</span>
             </div>
           `,
@@ -643,31 +1068,52 @@ export const PickupAndRouteNavigationMap: React.FC<Props> = ({
         }),
       }).addTo(group);
 
-      // Origin Marker (Pickup Hub)
+      // Draggable Origin Marker (Pickup Hub)
       const originMarker = L.marker(originCoords, {
-        icon: createGooglePinIcon('#0f9d58', 'Pickup Hub', true),
+        draggable: true,
+        icon: createGooglePinIcon('#0f9d58', 'Pickup Hub (Drag to move)', true),
       }).addTo(group);
-      originMarker.bindPopup(`<b>Pickup Location</b><br/>${originText}`);
+      originMarker.bindPopup(`<b>Pickup Location: ${currentOrigin}</b><br/>Drag pin anywhere on map to change pickup point!`);
 
-      // Destination Marker (Drop-off)
+      originMarker.on('dragend', (e: any) => {
+        const newLatLng = e.target.getLatLng();
+        setCustomOriginCoords([newLatLng.lat, newLatLng.lng]);
+        const updatedLabel = `Custom Point (${newLatLng.lat.toFixed(4)}, ${newLatLng.lng.toFixed(4)})`;
+        setCurrentOrigin(updatedLabel);
+        onOriginChange?.(updatedLabel);
+      });
+
+      // Draggable Destination Marker (Drop-off)
       const destMarker = L.marker(destCoords, {
-        icon: createGooglePinIcon('#ea4335', 'Destination'),
+        draggable: true,
+        icon: createGooglePinIcon('#ea4335', 'Destination (Drag to move)'),
       }).addTo(group);
-      destMarker.bindPopup(`<b>Destination</b><br/>${destinationText}`);
+      destMarker.bindPopup(`<b>Destination: ${currentDest}</b><br/>Drag pin anywhere to change destination!`);
 
-      // Only fit map bounds when endpoints or tab mode actually change (NOT on every corridor toggle!)
+      destMarker.on('dragend', (e: any) => {
+        const newLatLng = e.target.getLatLng();
+        setCustomDestCoords([newLatLng.lat, newLatLng.lng]);
+        const updatedLabel = `Custom Destination (${newLatLng.lat.toFixed(4)}, ${newLatLng.lng.toFixed(4)})`;
+        setCurrentDest(updatedLabel);
+        onDestinationChange?.(updatedLabel);
+      });
+
+      // Fit bounds with ample bottom padding so Destination marker is NEVER covered by the HUD bar
       const currentFitKey = `${activeTab}:${originCoords.join(',')}:${destCoords.join(',')}`;
       if (lastFittedBoundsKeyRef.current !== currentFitKey) {
         lastFittedBoundsKeyRef.current = currentFitKey;
         const allPoints: [number, number][] = [originCoords, destCoords, ...activeCorridor.latLngs];
         const bounds = L.latLngBounds(allPoints);
-        map.fitBounds(bounds, { padding: [50, 50], maxZoom: 15 });
+        map.fitBounds(bounds, {
+          paddingTopLeft: [50, 60],
+          paddingBottomRight: [50, 100],
+          maxZoom: 15,
+        });
       }
     } else {
       // MODE: WALK TO PICKUP HUB (High-detail campus view)
-      const studentCurrentLocation: [number, number] = [30.3418, 77.9436]; // Student near Gate 1 Walkway
+      const studentCurrentLocation: [number, number] = [30.3418, 77.9436];
 
-      // Campus Building Markers (UIT, USCS, BBA, Library, Gate 1)
       Object.entries(CAMPUS_BUILDING_GUIDES).forEach(([key, g]) => {
         const isTarget = key === effectiveBuildingKey;
         const marker = L.marker(g.location, {
@@ -684,7 +1130,6 @@ export const PickupAndRouteNavigationMap: React.FC<Props> = ({
         `);
       });
 
-      // Pedestrian walking path strictly on university paved paths
       const walkPath: [number, number][] = [
         studentCurrentLocation,
         [30.3422, 77.944],
@@ -699,17 +1144,14 @@ export const PickupAndRouteNavigationMap: React.FC<Props> = ({
         opacity: 0.95,
       }).addTo(group);
 
-      // "You Are Here" Marker
       L.marker(studentCurrentLocation, {
         icon: createGooglePinIcon('#2563eb', 'You Are Here', true),
       }).addTo(group);
 
-      // Destination Shelter Marker
       L.marker(guide.location, {
         icon: createGooglePinIcon('#059669', guide.buildingCode),
       }).addTo(group);
 
-      // Center and zoom into campus only if not already fitted
       const currentWalkFitKey = `walk:${effectiveBuildingKey}:${studentCurrentLocation.join(',')}`;
       if (lastFittedBoundsKeyRef.current !== currentWalkFitKey) {
         lastFittedBoundsKeyRef.current = currentWalkFitKey;
@@ -717,13 +1159,41 @@ export const PickupAndRouteNavigationMap: React.FC<Props> = ({
         map.fitBounds(walkBounds, { padding: [50, 50], maxZoom: 18 });
       }
     }
-  }, [activeTab, selectedCorridorId, corridors, effectiveBuildingKey, originText, destinationText]);
+  }, [activeTab, selectedCorridorId, corridors, effectiveBuildingKey, currentOrigin, currentDest, customOriginCoords, customDestCoords]);
 
   const handleCorridorSelect = (corridor: RouteCorridorOption) => {
     setSelectedCorridorId(corridor.id);
     if (onSelectRoute) {
       onSelectRoute(corridor);
     }
+  };
+
+  // Google Maps Swap Button (Reverses Origin & Destination)
+  const handleSwapDirections = () => {
+    const prevOrigin = currentOrigin;
+    const prevDest = currentDest;
+    const prevOriginCoords = originCoords;
+    const prevDestCoords = destCoords;
+
+    setCurrentOrigin(prevDest);
+    setCurrentDest(prevOrigin);
+    setCustomOriginCoords(prevDestCoords);
+    setCustomDestCoords(prevOriginCoords);
+
+    onOriginChange?.(prevDest);
+    onDestinationChange?.(prevOrigin);
+  };
+
+  const handleOriginSelect = (locName: string) => {
+    setCurrentOrigin(locName);
+    setCustomOriginCoords(null);
+    onOriginChange?.(locName);
+  };
+
+  const handleDestSelect = (locName: string) => {
+    setCurrentDest(locName);
+    setCustomDestCoords(null);
+    onDestinationChange?.(locName);
   };
 
   const handleRecenter = () => {
@@ -744,134 +1214,219 @@ export const PickupAndRouteNavigationMap: React.FC<Props> = ({
   };
 
   return (
-    <div className="bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-lg">
-      {/* Header Mode & Controls Switcher */}
-      <div className="bg-white border-b border-slate-200 px-5 py-3.5 flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-xl bg-blue-600 flex items-center justify-center text-white shadow-sm">
-            <Compass className="w-4 h-4" />
+    <div className="bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-xl">
+      {/* Top Google Maps Navigation & Direction Inputs Header */}
+      <div className="bg-white border-b border-slate-200 p-4 sm:p-5 space-y-4">
+        {/* Header Title & Mode Switchers */}
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-2xl bg-blue-600 flex items-center justify-center text-white shadow-md shadow-blue-500/20">
+              <Compass className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="text-sm font-black text-slate-900 flex items-center gap-2">
+                <span>Google Maps Multi-Road Direction Selector</span>
+                <span className="text-[10px] font-mono bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-full border border-emerald-200 font-bold flex items-center gap-1">
+                  <Check className="w-3 h-3" /> OFFICIAL BRIDGES
+                </span>
+              </h3>
+              <p className="text-xs text-slate-500">
+                Click directly on any road line or card to choose your commute path
+              </p>
+            </div>
           </div>
-          <div>
-            <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-              <span>Google Maps Turn-by-Turn Road Route</span>
-              <span className="text-[10px] font-mono bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-full border border-emerald-200 font-bold flex items-center gap-1">
-                <Check className="w-3 h-3" /> OFFICIAL BRIDGE ROUTES
-              </span>
-            </h3>
-            <p className="text-xs text-slate-500">
-              100% Real Roads via Chakrata Road Bridge (No River Crossing)
-            </p>
+
+          {/* Action Buttons & Tabs */}
+          <div className="flex flex-wrap items-center gap-2">
+            {/* Layer Selector */}
+            <div className="flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200 text-xs">
+              <button
+                type="button"
+                onClick={() => setMapLayerType('google_streets')}
+                className={`px-2.5 py-1 rounded-lg font-semibold transition-all cursor-pointer ${
+                  mapLayerType === 'google_streets'
+                    ? 'bg-white text-blue-700 shadow-xs'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                Google Map
+              </button>
+              <button
+                type="button"
+                onClick={() => setMapLayerType('google_satellite')}
+                className={`px-2.5 py-1 rounded-lg font-semibold transition-all cursor-pointer ${
+                  mapLayerType === 'google_satellite'
+                    ? 'bg-white text-blue-700 shadow-xs'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                Satellite
+              </button>
+              <button
+                type="button"
+                onClick={() => setMapLayerType('osm')}
+                className={`px-2.5 py-1 rounded-lg font-semibold transition-all cursor-pointer ${
+                  mapLayerType === 'osm'
+                    ? 'bg-white text-blue-700 shadow-xs'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                Terrain
+              </button>
+            </div>
+
+            {/* Mode Switcher Tabs */}
+            <div className="flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200 text-xs">
+              <button
+                type="button"
+                onClick={() => setActiveTab('route_choice')}
+                className={`px-3 py-1 rounded-lg font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
+                  activeTab === 'route_choice'
+                    ? 'bg-blue-600 text-white shadow-sm'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                <Car className="w-3.5 h-3.5" />
+                <span>Choose Driving Road</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab('walk_to_pickup')}
+                className={`px-3 py-1 rounded-lg font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
+                  activeTab === 'walk_to_pickup'
+                    ? 'bg-emerald-600 text-white shadow-sm'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                <Footprints className="w-3.5 h-3.5" />
+                <span>Campus Pickup Bay</span>
+              </button>
+            </div>
+
+            {/* External Google Maps Button */}
+            <button
+              type="button"
+              onClick={openInGoogleMaps}
+              className="px-3 py-1.5 rounded-xl border border-slate-300 text-slate-700 hover:bg-slate-50 text-xs font-semibold flex items-center gap-1 transition-all cursor-pointer"
+              title="Open route directly in Google Maps"
+            >
+              <span>Google Maps</span>
+              <ExternalLink className="w-3 h-3 text-slate-500" />
+            </button>
           </div>
         </div>
 
-        {/* Action Buttons & Tabs */}
-        <div className="flex flex-wrap items-center gap-2">
-          {/* Layer Selector */}
-          <div className="flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200 text-xs">
-            <button
-              type="button"
-              onClick={() => setMapLayerType('google_streets')}
-              className={`px-2.5 py-1 rounded-lg font-semibold transition-all cursor-pointer ${
-                mapLayerType === 'google_streets'
-                  ? 'bg-white text-blue-700 shadow-xs'
-                  : 'text-slate-600 hover:text-slate-900'
-              }`}
+        {/* Google Maps Style Origin & Destination Selector Bar with Swap Button (⇄) */}
+        <div className="bg-slate-50 p-3 rounded-2xl border border-slate-200 flex flex-col sm:flex-row items-center gap-2 sm:gap-3">
+          {/* Origin Picker */}
+          <div className="flex-1 w-full relative flex items-center">
+            <div className="absolute left-3 w-3 h-3 rounded-full bg-emerald-500 ring-4 ring-emerald-100 shrink-0" />
+            <select
+              value={currentOrigin}
+              onChange={(e) => handleOriginSelect(e.target.value)}
+              className="w-full pl-9 pr-3 py-2 bg-white rounded-xl border border-slate-200 text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 cursor-pointer truncate shadow-xs"
             >
-              Google Map
-            </button>
-            <button
-              type="button"
-              onClick={() => setMapLayerType('google_satellite')}
-              className={`px-2.5 py-1 rounded-lg font-semibold transition-all cursor-pointer ${
-                mapLayerType === 'google_satellite'
-                  ? 'bg-white text-blue-700 shadow-xs'
-                  : 'text-slate-600 hover:text-slate-900'
-              }`}
-            >
-              Satellite
-            </button>
-            <button
-              type="button"
-              onClick={() => setMapLayerType('osm')}
-              className={`px-2.5 py-1 rounded-lg font-semibold transition-all cursor-pointer ${
-                mapLayerType === 'osm'
-                  ? 'bg-white text-blue-700 shadow-xs'
-                  : 'text-slate-600 hover:text-slate-900'
-              }`}
-            >
-              Terrain
-            </button>
+              {POPULAR_LOCATIONS.map((loc) => (
+                <option key={`orig-${loc.key}`} value={loc.name}>
+                  {loc.name}
+                </option>
+              ))}
+              {!POPULAR_LOCATIONS.some((l) => l.name === currentOrigin) && (
+                <option value={currentOrigin}>{currentOrigin}</option>
+              )}
+            </select>
           </div>
 
-          {/* Mode Switcher Tabs */}
-          <div className="flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200 text-xs">
-            <button
-              type="button"
-              onClick={() => setActiveTab('route_choice')}
-              className={`px-3 py-1 rounded-lg font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
-                activeTab === 'route_choice'
-                  ? 'bg-blue-600 text-white shadow-sm'
-                  : 'text-slate-600 hover:text-slate-900'
-              }`}
-            >
-              <Car className="w-3.5 h-3.5" />
-              <span>Choose Driving Route</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setActiveTab('walk_to_pickup')}
-              className={`px-3 py-1 rounded-lg font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
-                activeTab === 'walk_to_pickup'
-                  ? 'bg-emerald-600 text-white shadow-sm'
-                  : 'text-slate-600 hover:text-slate-900'
-              }`}
-            >
-              <Footprints className="w-3.5 h-3.5" />
-              <span>Walk to Pickup Hub</span>
-            </button>
-          </div>
-
-          {/* External Google Maps Button */}
+          {/* Direction Swap Button (⇅) */}
           <button
             type="button"
-            onClick={openInGoogleMaps}
-            className="px-3 py-1.5 rounded-xl border border-slate-300 text-slate-700 hover:bg-slate-50 text-xs font-semibold flex items-center gap-1 transition-all cursor-pointer"
-            title="Open route directly in Google Maps"
+            onClick={handleSwapDirections}
+            className="p-2 bg-white hover:bg-blue-50 text-slate-600 hover:text-blue-600 rounded-xl border border-slate-200 shadow-xs transition-all cursor-pointer shrink-0 hover:rotate-180 duration-200"
+            title="Reverse Origin and Destination"
           >
-            <span>Open in Google Maps</span>
-            <ExternalLink className="w-3 h-3 text-slate-500" />
+            <ArrowUpDown className="w-4 h-4" />
           </button>
+
+          {/* Destination Picker */}
+          <div className="flex-1 w-full relative flex items-center">
+            <div className="absolute left-3 w-3 h-3 rounded-full bg-red-500 ring-4 ring-red-100 shrink-0" />
+            <select
+              value={currentDest}
+              onChange={(e) => handleDestSelect(e.target.value)}
+              className="w-full pl-9 pr-3 py-2 bg-white rounded-xl border border-slate-200 text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 cursor-pointer truncate shadow-xs"
+            >
+              {POPULAR_LOCATIONS.map((loc) => (
+                <option key={`dest-${loc.key}`} value={loc.name}>
+                  {loc.name}
+                </option>
+              ))}
+              {!POPULAR_LOCATIONS.some((l) => l.name === currentDest) && (
+                <option value={currentDest}>{currentDest}</option>
+              )}
+            </select>
+          </div>
+
+          {/* Quick Route Count Badge */}
+          <div className="shrink-0 text-xs font-bold text-blue-700 bg-blue-100/80 px-3 py-2 rounded-xl border border-blue-200 hidden lg:flex items-center gap-1.5">
+            <RouteIcon className="w-3.5 h-3.5" />
+            <span>{corridors.length === 1 ? '1 Verified Direct Road' : `${corridors.length} Verified Roads`}</span>
+          </div>
+        </div>
+
+        {/* Quick Suggestion Chips */}
+        <div className="flex items-center gap-2 overflow-x-auto pb-1 text-[11px] text-slate-500 no-scrollbar">
+          <span className="font-bold text-slate-600 shrink-0">Popular Hubs:</span>
+          {[
+            { label: 'Selaqui Hub', name: 'Selaqui Industrial & Institutional Hub' },
+            { label: 'Premnagar Market', name: 'Premnagar Chowk Market' },
+            { label: 'Suddhowala PG Hub', name: 'Suddhowala Chowk (Student PG Hub)' },
+            { label: 'Ballupur Chowk', name: 'Ballupur Chowk (City Entrance)' },
+            { label: 'Clock Tower', name: 'Clock Tower (Ghanta Ghar)' },
+            { label: 'UIT Porch', name: 'UIT Building (Uttaranchal Institute of Technology)' },
+          ].map((chip) => (
+            <button
+              key={chip.label}
+              type="button"
+              onClick={() => handleOriginSelect(chip.name)}
+              className={`px-2.5 py-1 rounded-full border transition-all cursor-pointer shrink-0 font-medium ${
+                currentOrigin === chip.name
+                  ? 'bg-emerald-600 text-white border-emerald-600'
+                  : 'bg-white text-slate-600 border-slate-200 hover:border-blue-300 hover:text-blue-600'
+              }`}
+            >
+              {chip.label}
+            </button>
+          ))}
         </div>
       </div>
 
       {/* Real Map Canvas */}
-      <div className="relative w-full" style={{ height: compact ? 340 : 440 }}>
-        {/* Leaflet Map DOM Container */}
+      <div className="relative w-full" style={{ height: compact ? 360 : 460 }}>
         <div ref={mapContainerRef} className="w-full h-full z-0" />
 
-        {/* Map Control Floating Toolbar (Recenter & Zoom) */}
+        {/* Floating Top Hint Pill on Map */}
+        {activeTab === 'route_choice' && (
+          <div className="absolute top-4 left-4 z-10 bg-slate-900/90 backdrop-blur-md text-white px-3.5 py-1.5 rounded-xl border border-slate-700 text-xs shadow-lg flex items-center gap-2 animate-in fade-in duration-200">
+            <RouteIcon className="w-4 h-4 text-blue-400" />
+            <span>
+              <b>Interactive:</b> Click any road line or floating pill to switch routes!
+            </span>
+          </div>
+        )}
+
+        {/* Recenter & Map Controls */}
         <div className="absolute top-4 right-4 z-10 flex flex-col gap-2">
           <button
             type="button"
             onClick={handleRecenter}
             className="p-2.5 bg-white/95 backdrop-blur-md rounded-xl shadow-md border border-slate-200 text-slate-700 hover:bg-slate-50 hover:text-blue-600 transition-all cursor-pointer"
-            title="Recenter Map on Campus"
+            title="Recenter Map"
           >
             <LocateFixed className="w-4 h-4" />
           </button>
         </div>
 
-        {/* Floating Top Banner on Map: Click Route to Choose */}
-        {activeTab === 'route_choice' && (
-          <div className="absolute top-4 left-4 z-10 bg-slate-900/90 backdrop-blur-md text-white px-3.5 py-1.5 rounded-xl border border-slate-700 text-xs shadow-md flex items-center gap-2">
-            <RouteIcon className="w-3.5 h-3.5 text-blue-400" />
-            <span>
-              <b>Tip:</b> Click directly on any road route or the cards below to choose how you travel!
-            </span>
-          </div>
-        )}
-
-        {/* Live Route HUD Overlay on Map */}
+        {/* Live Route Status HUD Overlay */}
         <div className="absolute bottom-4 left-4 right-4 z-10 flex flex-wrap items-center justify-between gap-2 bg-white/95 backdrop-blur-md px-4 py-2.5 rounded-2xl border border-slate-200 shadow-xl text-xs">
           {activeTab === 'route_choice' ? (
             <>
@@ -893,9 +1448,14 @@ export const PickupAndRouteNavigationMap: React.FC<Props> = ({
                   {currentCorridor.tag}
                 </span>
               </div>
-              <div className="text-emerald-700 font-bold flex items-center gap-1">
-                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                <span>Selected Highway Corridor</span>
+              <div className="flex items-center gap-3">
+                <span className="text-slate-600 font-medium">
+                  Est. Fuel Split: <b>₹{currentCorridor.fuelEstimateInr}/seat</b>
+                </span>
+                <div className="text-emerald-700 font-bold flex items-center gap-1">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                  <span>Selected Road</span>
+                </div>
               </div>
             </>
           ) : (
@@ -913,91 +1473,153 @@ export const PickupAndRouteNavigationMap: React.FC<Props> = ({
                   CCTV & Lighting Active
                 </span>
               </div>
-              <div className="text-slate-500 font-medium">
-                {guide.campusArea}
-              </div>
+              <div className="text-slate-500 font-medium">{guide.campusArea}</div>
             </>
           )}
         </div>
       </div>
 
-      {/* Interactive Bottom Route Chooser & Guidance Panel */}
+      {/* Interactive Bottom Route Cards & Turn Guidance */}
       <div className="p-4 sm:p-5 space-y-4 bg-slate-50/80 border-t border-slate-200">
         {activeTab === 'route_choice' ? (
-          /* Multi-Route Corridors Selector */
-          <div className="space-y-3">
+          <div className="space-y-4">
+            {/* Route Cards Header */}
             <div className="flex items-center justify-between">
               <div>
-                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
-                  <Navigation2 className="w-3.5 h-3.5 text-blue-600" />
-                  Choose How You Want to Go (Pickup → Drop Destination)
+                <h4 className="text-xs font-black uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
+                  <Navigation2 className="w-4 h-4 text-blue-600" />
+                  Select Driving Route (Click Card or Click Road on Map)
                 </h4>
-                <p className="text-xs text-slate-600 mt-0.5">
-                  Click on any route card or click directly on the road lines in the map to select:
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Each route follows verified roads across Dehradun & Uttaranchal University bridges:
                 </p>
               </div>
-              <span className="text-xs font-semibold text-blue-700 bg-blue-100/80 px-2.5 py-1 rounded-full border border-blue-200">
-                {corridors.length} Verified Bridge Routes
-              </span>
+              <button
+                type="button"
+                onClick={() => setShowTurnByTurn((prev) => !prev)}
+                className="text-xs font-bold text-blue-600 hover:text-blue-800 flex items-center gap-1 transition-colors cursor-pointer"
+              >
+                <span>{showTurnByTurn ? 'Hide Turn Guidance' : 'Show Turn Maneuvers'}</span>
+                {showTurnByTurn ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+              </button>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              {corridors.map((corridor) => {
+            {/* Interactive Route Cards */}
+            <div
+              className={`grid grid-cols-1 ${
+                corridors.length === 1
+                  ? 'sm:grid-cols-1 max-w-md'
+                  : corridors.length === 2
+                  ? 'sm:grid-cols-2'
+                  : 'sm:grid-cols-3'
+              } gap-3`}
+            >
+              {corridors.map((corridor, idx) => {
                 const isSelected = corridor.id === selectedCorridorId;
                 return (
                   <button
                     key={corridor.id}
                     type="button"
                     onClick={() => handleCorridorSelect(corridor)}
-                    className={`p-3.5 rounded-2xl border text-left transition-all cursor-pointer flex flex-col justify-between gap-3 ${
+                    className={`p-4 rounded-2xl border text-left transition-all cursor-pointer flex flex-col justify-between gap-3 relative ${
                       isSelected
-                        ? 'border-blue-500 bg-white shadow-md ring-2 ring-blue-500/20'
+                        ? 'border-blue-500 bg-white shadow-lg ring-2 ring-blue-500/20'
                         : 'border-slate-200 hover:border-slate-300 bg-white/70 hover:bg-white'
                     }`}
                   >
                     <div>
-                      <div className="flex items-center justify-between gap-1 mb-1.5">
+                      <div className="flex items-center justify-between gap-1 mb-2">
                         <span
-                          className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full ${
+                          className={`text-[10px] font-extrabold uppercase px-2.5 py-0.5 rounded-full ${
                             isSelected
                               ? 'bg-blue-600 text-white'
                               : 'bg-slate-100 text-slate-700'
                           }`}
                         >
-                          {corridor.tag}
+                          {idx === 0 ? 'Fastest Route' : corridor.tag}
                         </span>
                         {isSelected ? (
                           <span className="text-xs font-bold text-blue-600 flex items-center gap-1 bg-blue-50 px-2 py-0.5 rounded-full border border-blue-200">
                             <CheckCircle2 className="w-3.5 h-3.5" />
-                            Active Choice
+                            Active Road
                           </span>
                         ) : (
                           <span className="text-[11px] text-slate-400 font-semibold hover:text-blue-600">
-                            Click to Choose
+                            Click to Select
                           </span>
                         )}
                       </div>
+
                       <div className="font-bold text-xs text-slate-900 leading-tight">
                         {corridor.name}
                       </div>
-                      <p className="text-[11px] text-slate-500 mt-1 line-clamp-2 leading-relaxed">
+
+                      <p className="text-[11px] text-slate-500 mt-1.5 line-clamp-2 leading-relaxed">
                         {corridor.description}
                       </p>
+
+                      <div className="mt-2 flex flex-wrap items-center gap-1">
+                        {corridor.viaWaypoints.map((wp, wIdx) => (
+                          <span
+                            key={wIdx}
+                            className="text-[9px] bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded font-medium"
+                          >
+                            {wp}
+                          </span>
+                        ))}
+                      </div>
                     </div>
 
                     <div className="pt-2.5 border-t border-slate-100 flex items-center justify-between text-xs">
-                      <span className="font-bold text-slate-800 flex items-center gap-1">
-                        <Clock className="w-3.5 h-3.5 text-slate-400" />
+                      <span className="font-extrabold text-slate-900 flex items-center gap-1">
+                        <Clock className="w-3.5 h-3.5 text-blue-600" />
                         {corridor.durationMinutes} mins
                       </span>
                       <span className="text-slate-600 font-mono font-semibold">
                         {corridor.distanceKm} km
+                      </span>
+                      <span className="text-emerald-700 font-bold bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
+                        ₹{corridor.fuelEstimateInr}/seat
                       </span>
                     </div>
                   </button>
                 );
               })}
             </div>
+
+            {/* Expandable Google Maps Turn-by-Turn Maneuvers Drawer */}
+            {showTurnByTurn && currentCorridor.turnSteps && (
+              <div className="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm space-y-3 animate-in fade-in slide-in-from-top-2 duration-200">
+                <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+                  <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                    <Navigation2 className="w-3.5 h-3.5 text-blue-600" />
+                    Turn-by-Turn Navigation for: <b>{currentCorridor.name}</b>
+                  </span>
+                  <span className="text-[11px] text-slate-500 font-mono">
+                    Total: {currentCorridor.distanceKm} km · ~{currentCorridor.durationMinutes} mins
+                  </span>
+                </div>
+
+                <div className="space-y-2">
+                  {currentCorridor.turnSteps.map((step, sIdx) => (
+                    <div
+                      key={sIdx}
+                      className="p-2.5 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-between gap-3 text-xs"
+                    >
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-6 h-6 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center font-bold text-[11px] shrink-0 border border-blue-100">
+                          {sIdx + 1}
+                        </div>
+                        <span className="text-slate-800 font-medium">{step.instruction}</span>
+                      </div>
+                      <span className="text-slate-500 font-mono text-[11px] shrink-0 font-semibold">
+                        {step.distanceText}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         ) : (
           /* Walk to Pickup Guide */

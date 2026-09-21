@@ -1,0 +1,13 @@
+id,name,code,category,institution,lat,lng,features,safetyRating
+hub-uit,UIT Building (Uttaranchal Institute of Technology),UIT-BLDG,Campus Buildings,Uttaranchal University,30.3432,77.9448,EV Charging; 24/7 CCTV; Covered Passenger Waiting Shelter,4.9
+hub-uscs,USCS Building (School of Computing Sciences),USCS-BLDG,Campus Buildings,Uttaranchal University,30.3428,77.9456,Covered Shelter; Student Safety Help Point; High Lighting,4.8
+hub-bba,BBA Building (Uttaranchal Institute of Management),BBA-UIM,Campus Buildings,Uttaranchal University,30.3420,77.9461,Carpool Pickup Circle; Campus Security Desk; Shuttle Connection,4.9
+hub-lib,Central Academic Library & Law Block (LCD),LIB-LAW,Campus Buildings,Uttaranchal University,30.3425,77.9450,Knowledge Square Waiting Area; Pedestrian Zone; Guard Booth,4.8
+hub-gate1,"Campus Gate 1 (Main Entrance, Premnagar Road)",CAMPUS-G1,Campus Buildings,Uttaranchal University,30.3415,77.9440,Main Checkpost; Boom Barrier; Verified Student Lane; 24/7 CCTV,5.0
+hub-prem,Premnagar Chowk Market,DDN-PREM,Dehradun & Surrounding,Dehradun Regional,30.3340,77.9620,Bus Stand; Auto Stand; Commercial Bazaar; Street Lighting,4.6
+hub-suddh,Suddhowala Chowk (Student PG Hub),DDN-SUDDH,Dehradun & Surrounding,Dehradun Regional,30.3475,77.9320,High Student Density; Food Outlets; Verified Safe Zone,4.7
+hub-selaq,Selaqui Industrial & Institutional Hub,DDN-SELAQ,Dehradun & Surrounding,Dehradun Regional,30.3685,77.8540,Institutional Corridor; Pharma Hub; Highway Access,4.5
+hub-vikas,Vikasnagar Bus Terminal,DDN-VIKAS,Dehradun & Surrounding,Dehradun Regional,30.4350,77.7710,Regional Transit Terminal; Inter-City Buses; Well-Lit Waiting Hall,4.4
+hub-isbt,ISBT Dehradun (Inter-State Bus Terminal),DDN-ISBT,Dehradun & Surrounding,Dehradun Regional,30.2885,78.0080,Interstate Transport Hub; Police Booth; Prepaid Booth,4.8
+hub-ballu,Ballupur Chowk (City Entrance),DDN-BALLU,Dehradun & Surrounding,Dehradun Regional,30.3395,78.0125,Major Flyover Junction; Chakrata Road Corridor,4.6
+hub-clock,Clock Tower (Ghanta Ghar / Paltan Bazaar),DDN-CLOCK,Dehradun & Surrounding,Dehradun Regional,30.3256,78.0437,Historic City Center; Central Police Post; Paltan Bazaar Entrance,4.7

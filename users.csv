@@ -1,0 +1,7 @@
+id,name,email,role,college,department,batch,rating,totalRides,punctualityRate,verifiedEdu,vehicleModel,vehicleNumber,vehicleSeats
+usr_aditya_1,Aditya Kumar,aditya@dtu.ac.in,driver,Uttaranchal University,B.Tech Mechanical Engineering,Class of 2025,4.8,48,98,true,Honda City i-VTEC,UK 07 AK 4920,4
+usr_rahul_1,Rahul Sharma,rahul.s@uudn.ac.in,passenger,Uttaranchal University,B.Tech CSE,Class of 2026,4.9,32,99,true,,,0
+usr_priya_1,Priya Sharma,priya.s@uudn.ac.in,passenger,Uttaranchal University,MBA Marketing,Class of 2025,5.0,19,100,true,,,0
+usr_ananya_2,Ananya Verma,ananya@geu.ac.in,driver,Graphic Era University,B.Tech Computer Science & AI,Class of 2024,4.9,62,99,true,Hyundai Venue SX,UK 07 BV 1042,3
+usr_siddharth_3,Siddharth Nair,siddharth@upes.ac.in,driver,University of Petroleum and Energy Studies,B.Tech Energy Engineering,Class of 2024,4.7,39,95,true,Maruti Baleno Alpha,UK 07 CA 8821,4
+usr_admin_1,Operations Admin,admin@campusride.internal,admin,CampusRide System Administration,Mobility & Safety Center,Staff,5.0,1240,100,true,,,0

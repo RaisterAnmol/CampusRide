@@ -3,7 +3,7 @@ import mongoose from "mongoose";
 import { z } from "zod";
 import { Ride, User, Vehicle } from "../models";
 import { requireAuth, AuthenticatedRequest } from "../middleware/auth";
-import { calculateMatchScore } from "../services/matchingEngine";
+import { calculateMatchScore, haversineDistanceKm } from "../services/matchingEngine";
 import { logger } from "../utils/logger";
 
 const router = Router();
@@ -71,6 +71,7 @@ export function sanitizePublicUser(user: any) {
     avatarURL: userObj.avatarURL,
     verificationStatus: userObj.verificationStatus,
     preferences: userObj.preferences,
+    gender: userObj.gender,
   };
 }
 
@@ -117,13 +118,29 @@ router.get(
       }
 
       if (date) {
-        const searchDate = new Date(date as string);
+        let searchDate: Date | null = null;
+        const dStr = (date as string).trim();
+        if (dStr.includes("-")) {
+          const parts = dStr.split("-");
+          if (parts[0].length === 4) {
+            searchDate = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+          } else if (parts[2].length === 4) {
+            searchDate = new Date(Number(parts[2]), Number(parts[1]) - 1, Number(parts[0]));
+          }
+        }
+        if (!searchDate || isNaN(searchDate.getTime())) {
+          searchDate = new Date(dStr);
+        }
         if (!isNaN(searchDate.getTime())) {
           const startOfDay = new Date(searchDate);
           startOfDay.setHours(0, 0, 0, 0);
           const endOfDay = new Date(searchDate);
           endOfDay.setHours(23, 59, 59, 999);
-          query.departureTime = { $gte: startOfDay, $lte: endOfDay };
+          query.$or = [
+            { departureTime: { $gte: startOfDay, $lte: endOfDay } },
+            { recurring: true },
+            { "recurringSchedule.daysOfWeek": { $exists: true, $ne: [] } },
+          ];
         }
       }
 
@@ -170,6 +187,11 @@ router.get(
       const passesFilters = (rideObj: any, matchBreakdown?: any) => {
         const driver = rideObj.creator as any;
         if (!driver) return false;
+
+        // Women-only driver preference filter
+        if (womenOnlyDriver === "true" && driver.gender !== "female") {
+          return false;
+        }
 
         // College filter
         if (college && college !== "Any" && college !== "all") {
@@ -310,10 +332,7 @@ router.get(
           })
           .filter((r) => {
             if (!passesFilters(r, r.matchBreakdown)) return false;
-            return (
-              r.match.isMatch ||
-              (womenOnlyDriver !== "true" && r.match.matchScore >= 0.25)
-            );
+            return r.match.isMatch && r.match.matchScore >= 0.50;
           })
           .sort((a, b) => {
             // Hierarchical Academic Priority Sorting:
@@ -330,6 +349,7 @@ router.get(
             return b.match.matchScore - a.match.matchScore;
           });
 
+        // Return strictly the matched rides (no distant un-matched data padding)
         res.status(200).json(rankedRides);
         return;
       }

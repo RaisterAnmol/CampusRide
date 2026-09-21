@@ -28,25 +28,22 @@ export const Navbar: React.FC = () => {
   if (activePersona === 'driver') {
     navLinks = [
       { label: 'Post a Ride', href: '/post' },
-      { label: 'Driver Dashboard', href: '/dashboard' },
-      { label: 'Safety & SOS', href: '/safety' },
-      { label: 'Campus Corridors', href: '/colleges' },
     ];
   } else if (activePersona === 'admin') {
     navLinks = [
-      { label: 'Operations Overview', href: '/admin' },
-      { label: 'Fare & Pricing', href: '/admin' },
-      { label: 'Campus Institutions', href: '/colleges' },
+      { label: 'Operations Dashboard', href: '/admin' },
     ];
   } else {
     // passenger persona
     navLinks = [
       { label: 'Find a Ride', href: '/search' },
-      { label: 'My Bookings', href: '/dashboard' },
-      { label: 'How it works', href: '/#how-it-works' },
-      { label: 'Safety & SOS', href: '/safety' },
     ];
   }
+
+  const isPriya = activePersona === 'passenger' && (user?.preferences?.womenOnlyDriver || user?.gender === 'female');
+  const isRahul = activePersona === 'passenger' && !isPriya;
+  const isAditya = activePersona === 'driver';
+  const isAdmin = activePersona === 'admin';
 
   const handlePersonaSelect = async (persona: 'aditya' | 'rahul' | 'priya' | 'admin') => {
     await switchDemoUser(persona);
@@ -61,108 +58,128 @@ export const Navbar: React.FC = () => {
 
   return (
     <>
-      {/* Top Telemetry & Persona Switcher Bar */}
-      <div className="bg-[#101F1A] text-[#D4DED9] text-[11px] font-mono py-1.5 px-4 sm:px-8 flex flex-wrap items-center justify-between gap-2 border-b border-[#1D352D] z-50 relative">
-        <div className="flex items-center gap-2">
-          <span className="h-1.5 w-1.5 rounded-full bg-[#3E8F6C] animate-pulse" />
-          <span className="text-[#8A938E]">ROLE MODE:</span>
-          {activePersona === 'driver' && (
-            <span className="px-1.5 py-0.5 rounded bg-emerald-950 text-emerald-300 font-bold border border-emerald-700/60 uppercase tracking-wider text-[10px]">
-              🚗 Driver (Offer Seats Only)
+      {/* Top Telemetry & Persona Switcher Bar - Modern Refined UI */}
+      <div className="bg-slate-900 text-slate-200 text-xs py-2 px-4 sm:px-8 flex flex-wrap items-center justify-between gap-3 border-b border-slate-800 shadow-sm z-50 relative">
+        <div className="flex items-center gap-2.5">
+          <span className="relative flex h-2 w-2">
+            <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${
+              isPriya ? 'bg-pink-400' : isRahul ? 'bg-sky-400' : isAdmin ? 'bg-amber-400' : 'bg-emerald-400'
+            }`}></span>
+            <span className={`relative inline-flex rounded-full h-2 w-2 ${
+              isPriya ? 'bg-pink-500' : isRahul ? 'bg-sky-500' : isAdmin ? 'bg-amber-500' : 'bg-emerald-500'
+            }`}></span>
+          </span>
+          <span className="text-slate-400 font-semibold tracking-wider uppercase text-[11px]">Role Mode:</span>
+          {isAditya && (
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-600 text-white border border-emerald-400 shadow-sm ring-2 ring-emerald-500/30">
+              <span>🚗</span>
+              <span>DRIVER (POST RIDE ONLY)</span>
             </span>
           )}
-          {activePersona === 'passenger' && (
-            <span className="px-1.5 py-0.5 rounded bg-blue-950 text-blue-300 font-bold border border-blue-700/60 uppercase tracking-wider text-[10px]">
-              🎒 Passenger (Search & Book Only)
+          {isPriya && (
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-pink-600 text-white border border-pink-400 shadow-sm ring-2 ring-pink-500/30">
+              <span>🛡️</span>
+              <span>WOMEN-ONLY (SEARCH & BOOK ONLY)</span>
             </span>
           )}
-          {activePersona === 'admin' && (
-            <span className="px-1.5 py-0.5 rounded bg-amber-950 text-amber-300 font-bold border border-amber-700/60 uppercase tracking-wider text-[10px]">
-              🏛️ Admin (Operations & Pricing)
+          {isRahul && (
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-sky-600 text-white border border-sky-400 shadow-sm ring-2 ring-sky-500/30">
+              <span>🎒</span>
+              <span>PASSENGER (SEARCH & BOOK ONLY)</span>
+            </span>
+          )}
+          {isAdmin && (
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-amber-600 text-white border border-amber-400 shadow-sm ring-2 ring-amber-500/30">
+              <span>🏛️</span>
+              <span>ADMIN (OPERATIONS DASHBOARD)</span>
             </span>
           )}
         </div>
 
-        <div className="flex items-center gap-1.5">
-          <span className="text-[#8A938E] text-[10px] uppercase hidden sm:inline mr-1">Switch Persona:</span>
+        <div className="flex items-center gap-1.5 flex-wrap">
+          <span className="text-slate-400 font-semibold tracking-wider uppercase text-[11px] hidden sm:inline mr-1">Switch Persona:</span>
           <button
             onClick={() => handlePersonaSelect('aditya')}
-            title="Switch to Aditya (Driver) - Opens Post a Ride"
-            className={`px-2.5 py-0.5 rounded text-[11px] font-medium transition-all cursor-pointer ${
-              activePersona === 'driver'
-                ? 'bg-[#143D32] text-white font-bold ring-1 ring-[#3E8F6C] shadow-sm'
-                : 'text-white/70 hover:text-white hover:bg-white/10'
+            title="Switch to Aditya (Driver) - Only Post a Ride"
+            className={`px-3 py-1 rounded-full text-xs font-medium transition-all duration-150 cursor-pointer flex items-center gap-1.5 ${
+              isAditya
+                ? 'bg-emerald-600 text-white font-semibold shadow-sm ring-1 ring-emerald-400 border border-emerald-500'
+                : 'bg-slate-800 text-slate-300 hover:text-white hover:bg-slate-700 border border-slate-700/70'
             }`}
           >
-            🚗 Aditya (Driver)
+            <span>🚗</span>
+            <span>Aditya (Driver)</span>
           </button>
           <button
             onClick={() => handlePersonaSelect('rahul')}
-            title="Switch to Rahul (Passenger) - Opens Search Rides"
-            className={`px-2.5 py-0.5 rounded text-[11px] font-medium transition-all cursor-pointer ${
-              activePersona === 'passenger' && !user?.gender?.includes('female')
-                ? 'bg-[#143D32] text-white font-bold ring-1 ring-[#3E8F6C] shadow-sm'
-                : 'text-white/70 hover:text-white hover:bg-white/10'
+            title="Switch to Rahul (Passenger) - Only Search Rides"
+            className={`px-3 py-1 rounded-full text-xs font-medium transition-all duration-150 cursor-pointer flex items-center gap-1.5 ${
+              isRahul
+                ? 'bg-sky-600 text-white font-semibold shadow-sm ring-1 ring-sky-400 border border-sky-500'
+                : 'bg-slate-800 text-slate-300 hover:text-white hover:bg-slate-700 border border-slate-700/70'
             }`}
           >
-            🎒 Rahul (Passenger)
+            <span>🎒</span>
+            <span>Rahul (Passenger)</span>
           </button>
           <button
             onClick={() => handlePersonaSelect('priya')}
-            title="Switch to Priya (Women-Only Passenger) - Opens Search Rides"
-            className={`px-2.5 py-0.5 rounded text-[11px] font-medium transition-all cursor-pointer ${
-              activePersona === 'passenger' && user?.gender === 'female'
-                ? 'bg-[#143D32] text-white font-bold ring-1 ring-[#3E8F6C] shadow-sm'
-                : 'text-white/70 hover:text-white hover:bg-white/10'
+            title="Switch to Priya (Women-Only Passenger) - Only Search Rides"
+            className={`px-3 py-1 rounded-full text-xs font-medium transition-all duration-150 cursor-pointer flex items-center gap-1.5 ${
+              isPriya
+                ? 'bg-pink-600 text-white font-semibold shadow-sm ring-1 ring-pink-400 border border-pink-500'
+                : 'bg-slate-800 text-slate-300 hover:text-white hover:bg-slate-700 border border-slate-700/70'
             }`}
           >
-            🛡️ Priya (Women-Only)
+            <span>🛡️</span>
+            <span>Priya (Women-Only)</span>
           </button>
           <button
             onClick={() => handlePersonaSelect('admin')}
-            title="Switch to Campus Admin - Opens Admin Dashboard"
-            className={`px-2.5 py-0.5 rounded text-[11px] font-medium transition-all cursor-pointer ${
-              activePersona === 'admin'
-                ? 'bg-[#143D32] text-white font-bold ring-1 ring-[#3E8F6C] shadow-sm'
-                : 'text-white/70 hover:text-white hover:bg-white/10'
+            title="Switch to Campus Admin - Opens Operations Dashboard"
+            className={`px-3 py-1 rounded-full text-xs font-medium transition-all duration-150 cursor-pointer flex items-center gap-1.5 ${
+              isAdmin
+                ? 'bg-amber-600 text-white font-semibold shadow-sm ring-1 ring-amber-400 border border-amber-500'
+                : 'bg-slate-800 text-slate-300 hover:text-white hover:bg-slate-700 border border-slate-700/70'
             }`}
           >
-            🏛️ Campus Admin
+            <span>🏛️</span>
+            <span>Campus Admin</span>
           </button>
         </div>
       </div>
 
       {/* Main Responsive Header */}
       <motion.header
-        className={`sticky top-0 z-40 w-full transition-all duration-300 ${
-          isScrolled
-            ? 'bg-[#FFFDFC]/95 backdrop-blur-md border-b border-[#EAE7DF] py-3 shadow-subtle'
-            : 'bg-[#F7F5F0] py-4 border-b border-[#EAE7DF]/60'
-        }`}
-      >
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between">
-          {/* Logo with Deep Campus Green dot */}
-          <Link to="/" className="flex items-center gap-2.5 group">
-            <span className="w-2.5 h-2.5 rounded-full bg-[#143D32] ring-4 ring-[#143D32]/20 group-hover:scale-125 transition-transform" />
-            <span className="text-xl font-bold tracking-tight text-[#18201D] font-sans">
-              CampusRide
+      className={`sticky top-0 z-40 w-full transition-all duration-300 ${
+        isScrolled
+          ? 'bg-[#FFFDFC]/95 backdrop-blur-md border-b border-[#EAE7DF] py-3 shadow-subtle'
+          : 'bg-[#F7F5F0] py-4 border-b border-[#EAE7DF]/60'
+      }`}
+    >
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between">
+        {/* Logo with Deep Campus Green dot */}
+        <Link to="/" className="flex items-center gap-2.5 group">
+          <span className="w-2.5 h-2.5 rounded-full bg-[#143D32] ring-4 ring-[#143D32]/20 group-hover:scale-125 transition-transform" />
+          <span className="text-xl font-bold tracking-tight text-[#18201D] font-sans">
+            CampusRide
+          </span>
+          {activePersona === 'driver' && (
+            <span className="text-[10px] font-bold px-2 py-0.5 bg-emerald-100 text-emerald-800 rounded-full border border-emerald-300">
+              DRIVER
             </span>
-            {activePersona === 'driver' && (
-              <span className="text-[10px] font-bold px-2 py-0.5 bg-emerald-100 text-emerald-800 rounded-full border border-emerald-300">
-                DRIVER
-              </span>
-            )}
-            {activePersona === 'passenger' && (
-              <span className="text-[10px] font-bold px-2 py-0.5 bg-blue-100 text-blue-800 rounded-full border border-blue-300">
-                PASSENGER
-              </span>
-            )}
-            {activePersona === 'admin' && (
-              <span className="text-[10px] font-bold px-2 py-0.5 bg-amber-100 text-amber-800 rounded-full border border-amber-300">
-                ADMIN
-              </span>
-            )}
-          </Link>
+          )}
+          {activePersona === 'passenger' && (
+            <span className="text-[10px] font-bold px-2 py-0.5 bg-blue-100 text-blue-800 rounded-full border border-blue-300">
+              PASSENGER
+            </span>
+          )}
+          {activePersona === 'admin' && (
+            <span className="text-[10px] font-bold px-2 py-0.5 bg-amber-100 text-amber-800 rounded-full border border-amber-300">
+              ADMIN
+            </span>
+          )}
+        </Link>
 
           {/* Desktop Nav Links (Persona Filtered) */}
           <nav className="hidden md:flex items-center gap-7 text-sm font-medium text-[#5F6964]">
@@ -175,16 +192,6 @@ export const Navbar: React.FC = () => {
                 {link.label}
               </Link>
             ))}
-
-            {activePersona === 'admin' && (
-              <Link
-                to="/admin"
-                className="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-800 border border-emerald-200 hover:bg-emerald-100 transition-colors"
-              >
-                <ShieldAlert className="w-3.5 h-3.5 text-emerald-600" />
-                <span>Operations Dashboard</span>
-              </Link>
-            )}
           </nav>
 
           {/* Right Action Cluster (Persona Specific) */}
@@ -192,9 +199,9 @@ export const Navbar: React.FC = () => {
             {user ? (
               <div className="flex items-center gap-3">
                 <Link
-                  to="/dashboard"
+                  to={activePersona === 'driver' ? '/post' : activePersona === 'admin' ? '/admin' : '/search'}
                   className="flex items-center gap-2 p-1 rounded-lg hover:bg-black/5 transition-colors"
-                  title="View Dashboard"
+                  title="View Profile"
                 >
                   <img
                     src={user.avatarURL || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=120&q=80'}
@@ -316,10 +323,10 @@ export const Navbar: React.FC = () => {
                 {user ? (
                   <div className="pt-4 border-t border-[#EAE7DF] flex flex-col gap-2">
                     <Link
-                      to="/dashboard"
+                      to={activePersona === 'driver' ? '/post' : activePersona === 'admin' ? '/admin' : '/search'}
                       className="text-sm font-medium text-[#5F6964] hover:text-[#18201D]"
                     >
-                      Dashboard ({user.name})
+                      {user.name} ({activePersona.toUpperCase()})
                     </Link>
                     {activePersona === 'driver' && (
                       <Link
@@ -337,6 +344,15 @@ export const Navbar: React.FC = () => {
                       >
                         <Search className="w-4 h-4" />
                         <span>Find a Ride</span>
+                      </Link>
+                    )}
+                    {activePersona === 'admin' && (
+                      <Link
+                        to="/admin"
+                        className="w-full py-2.5 text-center text-sm font-semibold bg-emerald-800 text-white rounded-lg flex items-center justify-center gap-2"
+                      >
+                        <ShieldAlert className="w-4 h-4" />
+                        <span>Operations Dashboard</span>
                       </Link>
                     )}
                     <button

@@ -150,15 +150,17 @@ export function calculateMatchScore(
     driverRide.origin,
     passengerQuery.origin,
   );
-  const passengerToDestDist = haversineDistanceKm(passengerQuery.origin, dest);
+  const passengerTripDist = haversineDistanceKm(passengerQuery.origin, dest);
+  const destToDriverDestDist = haversineDistanceKm(dest, driverRide.destination);
 
-  // DetourDistance = (dist(driverOrigin, passengerOrigin) + dist(passengerOrigin, dest)) - dist(driverOrigin, dest)
-  const rawDetour = pickupDist + passengerToDestDist - driverRouteDist;
+  // True Carpool Detour: driverOrigin -> passengerOrigin -> passengerDest -> driverDest vs direct driverOrigin -> driverDest
+  const totalTripWithPassenger = pickupDist + passengerTripDist + destToDriverDestDist;
+  const rawDetour = totalTripWithPassenger - driverRouteDist;
   const detourDist = Math.max(0, rawDetour);
 
   // RouteOverlap = 1 - (DetourDistance / DriverRouteDistance)
   // Clamp between 0 and 1
-  let routeOverlap = 1 - detourDist / driverRouteDist;
+  let routeOverlap = 1 - (detourDist / Math.max(driverRouteDist, 1.0));
   if (routeOverlap < 0) routeOverlap = 0;
   if (routeOverlap > 1) routeOverlap = 1;
 
@@ -172,11 +174,32 @@ export function calculateMatchScore(
   if (timeMatch < 0) timeMatch = 0;
   if (timeMatch > 1) timeMatch = 1;
 
-  // 5. Pickup Proximity Calculation (cap at ~2km = 0)
-  // Closer = higher (at 0km = 1.0, at >= 2km = 0.0)
+  // 5. Pickup & Destination Proximity Calculation (cap at ~2km = 0)
   const MAX_PICKUP_KM = 2.0;
   let pickupProximity = Math.max(0, 1 - pickupDist / MAX_PICKUP_KM);
   if (pickupProximity < 0) pickupProximity = 0;
+
+  const destDist = passengerQuery.destination
+    ? haversineDistanceKm(driverRide.destination, passengerQuery.destination)
+    : 0;
+
+  // Strict Corridor Match: If driver pickup or destination is > 2.5 km from passenger points, strictly disqualify
+  if (pickupDist > 2.5 || (passengerQuery.destination && destDist > 2.5)) {
+    return {
+      isMatch: false,
+      matchScore: 0,
+      percentage: 0,
+      disqualificationReason: `Route points do not match: pickup is ${pickupDist.toFixed(1)} km away, drop-off is ${destDist.toFixed(1)} km away`,
+      breakdown: {
+        routeOverlap: 0,
+        timeMatch: Math.round(timeMatch * 100) / 100,
+        pickupProximity: 0,
+        seatBonus: 0,
+        detourDistanceKm: Math.round(detourDist * 100) / 100,
+        pickupDistanceKm: Math.round(pickupDist * 100) / 100,
+      },
+    };
+  }
 
   // If routes are completely divergent (zero route overlap), disqualify
   if (routeOverlap <= 0) {
@@ -283,8 +306,8 @@ export function calculateMatchScore(
   );
   const percentage = Math.round(roundedScore * 100);
 
-  // If divergent route or score is negligible (< 0.25), not surfaced
-  const isMatch = roundedScore >= 0.25;
+  // Must have both meaningful route overlap (>= 40%) and overall match score >= 50%
+  const isMatch = roundedScore >= 0.50 && routeOverlap >= 0.40;
 
   return {
     isMatch,

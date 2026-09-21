@@ -124,7 +124,7 @@ export const StatusBanner: React.FC = () => {
         <div className="flex items-center gap-2.5 text-[#101828]">
           <span className="px-2 py-0.5 rounded bg-[#EFF8FF] text-[#175CD3] font-bold">LIVE FEED</span>
           <span className="text-[#667085]">
-            Aditya K. posted ride: <span className="text-[#101828] font-semibold">Rohini Sec 14 → DTU Main Campus</span> (2 seats open)
+            Aditya K. posted ride: <span className="text-[#101828] font-semibold">Premnagar Chowk → Uttaranchal University Gate 1</span> (2 seats open)
           </span>
         </div>
         <span className="text-[#98A2B3] text-[11px] shrink-0">Updated 42 seconds ago</span>

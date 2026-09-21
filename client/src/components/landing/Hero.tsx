@@ -16,10 +16,9 @@ import { useAuth } from "../../context/AuthContext";
 export const Hero: React.FC = () => {
   const { activePersona, user } = useAuth();
   const navigate = useNavigate();
-  const [from, setFrom] = useState("Rohini Sector 14");
-  const [to, setTo] = useState("DTU Main Campus");
+  const [from, setFrom] = useState("Selaqui Hub");
+  const [to, setTo] = useState("Uttaranchal University Gate 1");
   const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
-  const [carProgress, setCarProgress] = useState(15);
   const heroRef = useRef<HTMLElement>(null);
   const headlineRef = useRef<HTMLHeadingElement>(null);
 
@@ -51,12 +50,36 @@ export const Hero: React.FC = () => {
     return () => ctx.revert();
   }, [activePersona]);
 
-  // Traveling vehicle animation
+  // High-precision path tracking for the vehicle along the bezier curve
+  const pathRef = useRef<SVGPathElement>(null);
+  const [carTransform, setCarTransform] = useState({ x: 60, y: 80, angle: 0 });
+
+  // Continuous 60fps smooth loop along the route curve
   useEffect(() => {
-    const interval = setInterval(() => {
-      setCarProgress((prev) => (prev >= 90 ? 10 : prev + 0.35));
-    }, 50);
-    return () => clearInterval(interval);
+    let animFrameId: number;
+    let startTime: number | null = null;
+    const duration = 14000; // 14s full circuit
+
+    const animate = (timestamp: number) => {
+      if (!startTime) startTime = timestamp;
+      const elapsed = timestamp - startTime;
+      const rawProgress = (elapsed % duration) / duration;
+
+      if (pathRef.current) {
+        const totalLen = pathRef.current.getTotalLength();
+        // Travel between 4% and 96% of the curve
+        const curDist = (0.04 + rawProgress * 0.92) * totalLen;
+        const pt = pathRef.current.getPointAtLength(curDist);
+        const ptAhead = pathRef.current.getPointAtLength(Math.min(curDist + 4, totalLen));
+        const angle = Math.atan2(ptAhead.y - pt.y, ptAhead.x - pt.x) * (180 / Math.PI);
+        setCarTransform({ x: pt.x, y: pt.y, angle });
+      }
+
+      animFrameId = requestAnimationFrame(animate);
+    };
+
+    animFrameId = requestAnimationFrame(animate);
+    return () => cancelAnimationFrame(animFrameId);
   }, []);
 
   const handleSearch = (e: React.FormEvent) => {
@@ -77,18 +100,23 @@ export const Hero: React.FC = () => {
           <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
           <span>CampusRide · University Commute Network</span>
           {activePersona === 'driver' && (
-            <span className="bg-emerald-100 text-emerald-800 px-2 py-0.2 rounded font-bold ml-1">
-              DRIVER ROLE
+            <span className="bg-emerald-600 text-white px-2.5 py-0.5 rounded-full font-bold ml-1 text-[11px] shadow-xs">
+              🚗 DRIVER ROLE
             </span>
           )}
-          {activePersona === 'passenger' && (
-            <span className="bg-blue-100 text-blue-800 px-2 py-0.2 rounded font-bold ml-1">
-              PASSENGER ROLE
+          {activePersona === 'passenger' && user?.gender === 'female' && (
+            <span className="bg-pink-600 text-white px-2.5 py-0.5 rounded-full font-bold ml-1 text-[11px] shadow-xs">
+              🛡️ WOMEN-ONLY ROLE
+            </span>
+          )}
+          {activePersona === 'passenger' && user?.gender !== 'female' && (
+            <span className="bg-sky-600 text-white px-2.5 py-0.5 rounded-full font-bold ml-1 text-[11px] shadow-xs">
+              🎒 PASSENGER ROLE
             </span>
           )}
           {activePersona === 'admin' && (
-            <span className="bg-amber-100 text-amber-800 px-2 py-0.2 rounded font-bold ml-1">
-              ADMIN ROLE
+            <span className="bg-amber-600 text-white px-2.5 py-0.5 rounded-full font-bold ml-1 text-[11px] shadow-xs">
+              🏛️ ADMIN ROLE
             </span>
           )}
         </div>
@@ -178,7 +206,7 @@ export const Hero: React.FC = () => {
                     type="text"
                     value={from}
                     onChange={(e) => setFrom(e.target.value)}
-                    placeholder="Pickup area or metro"
+                    placeholder="Pickup area (e.g. Selaqui Hub)"
                     className="w-full bg-transparent text-sm text-slate-900 focus:outline-none"
                   />
                 </div>
@@ -194,7 +222,7 @@ export const Hero: React.FC = () => {
                     type="text"
                     value={to}
                     onChange={(e) => setTo(e.target.value)}
-                    placeholder="Campus gate or college"
+                    placeholder="Campus gate (e.g. Uttaranchal University Gate 1)"
                     className="w-full bg-transparent text-sm text-slate-900 focus:outline-none"
                   />
                 </div>
@@ -233,24 +261,35 @@ export const Hero: React.FC = () => {
           <div className="flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-blue-600 animate-pulse" />
             <span className="text-slate-900 font-medium">Corridor 01:</span>
-            <span>North Campus Artery</span>
+            <span>Chakrata Rd · Selaqui to UIT Campus</span>
           </div>
           <div className="hidden sm:flex items-center gap-4 text-[11px]">
-            <span>Live Speed: 42 km/h</span>
+            <span>Live Speed: 38 km/h</span>
             <span className="text-emerald-600 font-medium">
-              Cost split only
+              Cost split only · Zero Surge
             </span>
           </div>
         </div>
 
         {/* SVG Route Track */}
-        <div className="relative h-36 sm:h-44 w-full mt-4 flex items-center">
+        <div className="relative h-44 sm:h-48 w-full mt-4 flex items-center">
           <svg
             className="w-full h-full overflow-visible"
             viewBox="0 0 840 160"
             fill="none"
             xmlns="http://www.w3.org/2000/svg"
           >
+            <defs>
+              <linearGradient id="routeGradient" x1="0" y1="0" x2="1" y2="0">
+                <stop offset="0%" stopColor="#2563EB" />
+                <stop offset="50%" stopColor="#3B82F6" />
+                <stop offset="100%" stopColor="#059669" />
+              </linearGradient>
+              <filter id="badgeShadow" x="-10%" y="-10%" width="120%" height="130%">
+                <feDropShadow dx="0" dy="2" stdDeviation="2" floodOpacity="0.08" />
+              </filter>
+            </defs>
+
             <line
               x1="0"
               y1="40"
@@ -281,140 +320,238 @@ export const Hero: React.FC = () => {
 
             {/* Base Route Track */}
             <path
-              d="M 60 80 C 220 25, 340 135, 540 80 C 660 50, 720 80, 780 80"
+              d="M 60 80 C 200 30, 260 55, 300 55 C 400 55, 480 125, 560 80 C 640 45, 710 80, 780 80"
               stroke="#E2E8F0"
-              strokeWidth="5"
+              strokeWidth="6"
               strokeLinecap="round"
             />
 
-            {/* Active Highlight Track */}
+            {/* Active Highlight Track - Animated Dash */}
             <path
-              d="M 60 80 C 220 25, 340 135, 540 80 C 660 50, 720 80, 780 80"
-              stroke="#2563EB"
-              strokeWidth="3"
+              ref={pathRef}
+              d="M 60 80 C 200 30, 260 55, 300 55 C 400 55, 480 125, 560 80 C 640 45, 710 80, 780 80"
+              stroke="url(#routeGradient)"
+              strokeWidth="3.5"
               strokeLinecap="round"
-              strokeDasharray="8 8"
+              strokeDasharray="8 6"
+              className="route-dash-moving"
             />
 
-            {/* Waypoint 1: Home */}
+            {/* Waypoint 1: Selaqui Hub (Starting Point) */}
             <g transform="translate(60, 80)">
               <circle r="8" fill="#FFFFFF" stroke="#0F172A" strokeWidth="2.5" />
               <circle r="3" fill="#0F172A" />
               <text
                 x="0"
-                y="-16"
+                y="-18"
                 textAnchor="middle"
                 fill="#0F172A"
                 fontSize="11"
                 fontWeight="600"
               >
-                Rohini Sec 14
+                Selaqui Hub
               </text>
-              <text
-                x="0"
-                y="22"
-                textAnchor="middle"
-                fill="#64748B"
-                fontSize="10"
-                fontFamily="monospace"
-              >
-                08:15 AM
-              </text>
+              {/* Opaque pill to guarantee zero line clash */}
+              <g transform="translate(0, 16)">
+                <rect
+                  x="-32"
+                  y="0"
+                  width="64"
+                  height="18"
+                  rx="9"
+                  fill="#FFFFFF"
+                  stroke="#E2E8F0"
+                  strokeWidth="1"
+                  filter="url(#badgeShadow)"
+                />
+                <text
+                  x="0"
+                  y="12.5"
+                  textAnchor="middle"
+                  fill="#64748B"
+                  fontSize="9.5"
+                  fontFamily="monospace"
+                >
+                  08:15 AM
+                </text>
+              </g>
             </g>
 
-            {/* Waypoint 2: Metro */}
-            <g transform="translate(280, 55)">
-              <circle r="6" fill="#FFFFFF" stroke="#2563EB" strokeWidth="2" />
-              <circle r="2.5" fill="#2563EB" />
+            {/* Waypoint 2: Suddhowala PG Hub */}
+            <g transform="translate(300, 55)">
+              <circle r="7" fill="#FFFFFF" stroke="#2563EB" strokeWidth="2.5" />
+              <circle r="3" fill="#2563EB" />
               <text
                 x="0"
-                y="-14"
+                y="-18"
                 textAnchor="middle"
-                fill="#2563EB"
+                fill="#1E40AF"
                 fontSize="11"
-                fontWeight="500"
+                fontWeight="600"
               >
-                Pitampura Metro
+                Suddhowala PG Hub
               </text>
-              <text
-                x="0"
-                y="20"
-                textAnchor="middle"
-                fill="#64748B"
-                fontSize="10"
-                fontFamily="monospace"
-              >
-                Rahul S. (+1)
-              </text>
+              {/* Clean opaque badge for passenger - completely clears the curve */}
+              <g transform="translate(0, 18)">
+                <rect
+                  x="-46"
+                  y="0"
+                  width="92"
+                  height="20"
+                  rx="10"
+                  fill="#FFFFFF"
+                  stroke="#BFDBFE"
+                  strokeWidth="1.2"
+                  filter="url(#badgeShadow)"
+                />
+                <text
+                  x="0"
+                  y="13.5"
+                  textAnchor="middle"
+                  fill="#1D4ED8"
+                  fontSize="10"
+                  fontWeight="600"
+                  fontFamily="monospace"
+                >
+                  Rahul S. (+1)
+                </text>
+              </g>
             </g>
 
-            {/* Waypoint 3: Outer Ring */}
-            <g transform="translate(540, 80)">
-              <circle r="6" fill="#FFFFFF" stroke="#2563EB" strokeWidth="2" />
-              <circle r="2.5" fill="#2563EB" />
+            {/* Waypoint 3: Nanda Ki Chowki Bridge */}
+            <g transform="translate(560, 80)">
+              <circle r="7" fill="#FFFFFF" stroke="#2563EB" strokeWidth="2.5" />
+              <circle r="3" fill="#2563EB" />
               <text
                 x="0"
-                y="-14"
+                y="-18"
                 textAnchor="middle"
-                fill="#2563EB"
+                fill="#1E40AF"
                 fontSize="11"
-                fontWeight="500"
+                fontWeight="600"
               >
-                Ring Road Junction
+                Nanda Ki Chowki
               </text>
-              <text
-                x="0"
-                y="20"
-                textAnchor="middle"
-                fill="#64748B"
-                fontSize="10"
-                fontFamily="monospace"
-              >
-                Priya S. (+1)
-              </text>
+              {/* Clean opaque badge for passenger */}
+              <g transform="translate(0, 18)">
+                <rect
+                  x="-44"
+                  y="0"
+                  width="88"
+                  height="20"
+                  rx="10"
+                  fill="#FFFFFF"
+                  stroke="#BFDBFE"
+                  strokeWidth="1.2"
+                  filter="url(#badgeShadow)"
+                />
+                <text
+                  x="0"
+                  y="13.5"
+                  textAnchor="middle"
+                  fill="#1D4ED8"
+                  fontSize="10"
+                  fontWeight="600"
+                  fontFamily="monospace"
+                >
+                  Priya S. (+1)
+                </text>
+              </g>
             </g>
 
-            {/* Waypoint 4: Campus */}
+            {/* Waypoint 4: UU Campus Gate 1 / UIT */}
             <g transform="translate(780, 80)">
               <circle r="10" fill="#FFFFFF" stroke="#059669" strokeWidth="3" />
               <circle r="4" fill="#059669" />
               <text
                 x="0"
-                y="-18"
+                y="-20"
                 textAnchor="middle"
                 fill="#065F46"
-                fontSize="11"
+                fontSize="11.5"
                 fontWeight="700"
               >
-                DTU Main Gate
+                UU Campus Gate 1 (UIT)
               </text>
-              <text
-                x="0"
-                y="24"
-                textAnchor="middle"
-                fill="#059669"
-                fontSize="10"
-                fontWeight="600"
-                fontFamily="monospace"
-              >
-                08:45 AM Arrival
-              </text>
+              {/* Opaque arrival pill */}
+              <g transform="translate(0, 18)">
+                <rect
+                  x="-52"
+                  y="0"
+                  width="104"
+                  height="20"
+                  rx="10"
+                  fill="#ECFDF5"
+                  stroke="#A7F3D0"
+                  strokeWidth="1.2"
+                  filter="url(#badgeShadow)"
+                />
+                <text
+                  x="0"
+                  y="13.5"
+                  textAnchor="middle"
+                  fill="#059669"
+                  fontSize="10"
+                  fontWeight="600"
+                  fontFamily="monospace"
+                >
+                  08:45 AM Arrival
+                </text>
+              </g>
+            </g>
+
+            {/* Dynamically Traveling Vehicle Glued to SVG Bezier Curve */}
+            <g
+              transform={`translate(${carTransform.x}, ${carTransform.y})`}
+              className="pointer-events-none"
+            >
+              {/* Radar Ping Glow */}
+              <circle r="16" fill="#2563EB" opacity="0.2" className="animate-ping" />
+              
+              {/* Traveling Car Marker Node */}
+              <circle r="9" fill="#0F172A" stroke="#3B82F6" strokeWidth="2.5" />
+              <circle r="3.5" fill="#60A5FA" />
+
+              {/* Floating Driver Pill Badge - perfectly level, never flips */}
+              <g transform="translate(0, -28)">
+                <rect
+                  x="-42"
+                  y="-11"
+                  width="84"
+                  height="22"
+                  rx="6"
+                  fill="#0F172A"
+                  stroke="rgba(255,255,255,0.2)"
+                  strokeWidth="1"
+                  filter="url(#badgeShadow)"
+                />
+                {/* Pointer down to car */}
+                <polygon points="-4,11 4,11 0,14" fill="#0F172A" />
+                <text
+                  x="-12"
+                  y="4"
+                  textAnchor="middle"
+                  fill="#FFFFFF"
+                  fontSize="10"
+                  fontFamily="ui-monospace, monospace"
+                  fontWeight="600"
+                >
+                  Aditya
+                </text>
+                <text
+                  x="20"
+                  y="4"
+                  textAnchor="middle"
+                  fill="#34D399"
+                  fontSize="10"
+                  fontFamily="ui-monospace, monospace"
+                  fontWeight="700"
+                >
+                  ₹40
+                </text>
+              </g>
             </g>
           </svg>
-
-          {/* Dynamically Traveling Vehicle Marker */}
-          <div
-            className="absolute top-1/2 -translate-y-1/2 transition-all duration-75 pointer-events-none"
-            style={{ left: `${carProgress}%` }}
-          >
-            <div className="relative -top-4">
-              <div className="bg-slate-900 text-white text-[10px] font-mono px-2 py-0.5 rounded shadow-sm whitespace-nowrap flex items-center gap-1.5 border border-white/10">
-                <span>Aditya</span>
-                <span className="text-emerald-400">· ₹40</span>
-              </div>
-              <div className="w-1.5 h-1.5 bg-slate-900 rotate-45 mx-auto -mt-0.5" />
-            </div>
-          </div>
         </div>
 
         {/* Telemetry Strip */}
@@ -422,7 +559,7 @@ export const Hero: React.FC = () => {
           <div>
             <span className="text-slate-500 block text-[11px]">Distance</span>
             <span className="text-slate-900 font-semibold">
-              14.2 km corridor
+              12.8 km corridor
             </span>
           </div>
           <div>
@@ -430,7 +567,7 @@ export const Hero: React.FC = () => {
               Detour impact
             </span>
             <span className="text-emerald-600 font-semibold">
-              &lt; 4 mins total
+              &lt; 3 mins total
             </span>
           </div>
           <div>

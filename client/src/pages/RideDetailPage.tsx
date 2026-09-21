@@ -298,6 +298,17 @@ export const RideDetailPage: React.FC = () => {
               </div>
             </div>
           </div>
+
+          {/* Interactive Google Maps Commute & Pickup Navigation Map */}
+          <div className="pt-6 border-t border-slate-100">
+            <h3 className="text-sm font-bold text-slate-800 mb-3 flex items-center gap-2">
+              <span>🗺️ Verified Highway Route & Designated Campus Pickup Bay</span>
+            </h3>
+            <PickupAndRouteNavigationMap
+              originText={ride.origin.text}
+              destinationText={ride.destination.text}
+            />
+          </div>
         </div>
 
         {/* Driver Profile */}

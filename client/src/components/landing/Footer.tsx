@@ -85,10 +85,10 @@ export const Footer: React.FC = () => {
         <div>
           <h4 className="text-xs font-mono uppercase font-bold text-[#101828] tracking-wider mb-4">Universities</h4>
           <ul className="space-y-2.5 text-xs font-mono text-[#667085]">
-            <li>Delhi Technological University (DTU)</li>
-            <li>IIT Delhi (IITD)</li>
-            <li>Netaji Subhas Univ of Tech (NSUT)</li>
-            <li>Indira Gandhi Delhi Tech Univ (IGDTUW)</li>
+            <li>Uttaranchal University (UU Main Campus)</li>
+            <li>Uttaranchal Institute of Technology (UIT)</li>
+            <li>School of Computing Sciences (USCS)</li>
+            <li>Uttaranchal Institute of Management (UIM)</li>
           </ul>
         </div>
       </div>

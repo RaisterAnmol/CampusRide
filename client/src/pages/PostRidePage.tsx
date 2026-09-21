@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "../context/AuthContext";
@@ -15,26 +15,45 @@ import {
   ArrowLeft,
   Sparkles,
 } from "lucide-react";
+import { PickupAndRouteNavigationMap } from "../components/map/PickupAndRouteNavigationMap";
 
 const PRESET_LOCATIONS = [
-  { text: "Campus Gate 1 (Main Entrance)", lat: 28.545, lng: 77.192 },
-  { text: "North Campus Hostel Complex", lat: 28.552, lng: 77.185 },
-  { text: "City Metro Station (Blue Line)", lat: 28.567, lng: 77.208 },
-  { text: "Central Railway Station", lat: 28.58, lng: 77.22 },
-  { text: "Cyber City Tech Park", lat: 28.495, lng: 77.089 },
-  { text: "Airport Terminal 1", lat: 28.556, lng: 77.1 },
+  // Dehradun - Uttaranchal University Campus Buildings
+  { text: "UIT Building (Uttaranchal Institute of Technology)", lat: 30.3432, lng: 77.9448 },
+  { text: "USCS Building (School of Computing Sciences)", lat: 30.3428, lng: 77.9456 },
+  { text: "BBA Building (Uttaranchal Institute of Management)", lat: 30.3420, lng: 77.9461 },
+  { text: "Central Academic Library & Law Block", lat: 30.3425, lng: 77.9450 },
+  { text: "Campus Gate 1 (Main Entrance, Premnagar Road)", lat: 30.3415, lng: 77.9440 },
+
+  // Dehradun Regional Transit & Student Hubs
+  { text: "Premnagar Chowk Market", lat: 30.3340, lng: 77.9620 },
+  { text: "Suddhowala Chowk (Student PG Hub)", lat: 30.3475, lng: 77.9320 },
+  { text: "Selaqui Industrial & Institutional Hub", lat: 30.3685, lng: 77.8540 },
+  { text: "Vikasnagar Bus Terminal", lat: 30.4350, lng: 77.7710 },
+  { text: "ISBT Dehradun (Inter-State Bus Terminal)", lat: 30.2885, lng: 78.0080 },
+  { text: "Ballupur Chowk (City Entrance)", lat: 30.3395, lng: 78.0125 },
+  { text: "Clock Tower (Ghanta Ghar / Paltan Bazaar)", lat: 30.3256, lng: 78.0437 },
 ];
 
 export const PostRidePage: React.FC = () => {
   const { user, switchDemoUser, activePersona } = useAuth();
   const navigate = useNavigate();
 
+  // Strict Persona Redirection: Passengers ONLY search rides, Admins ONLY dashboard
+  useEffect(() => {
+    if (activePersona === 'passenger') {
+      navigate('/search', { replace: true });
+    } else if (activePersona === 'admin') {
+      navigate('/admin', { replace: true });
+    }
+  }, [activePersona, navigate]);
+
   // Wizard state (Steps 1 to 5)
   const [currentStep, setCurrentStep] = useState(1);
 
   // Form State
   const [originIndex, setOriginIndex] = useState(0);
-  const [destIndex, setDestIndex] = useState(2);
+  const [destIndex, setDestIndex] = useState(5);
   const [departureDate, setDepartureDate] = useState(() => {
     const d = new Date();
     d.setHours(d.getHours() + 1);
@@ -307,6 +326,31 @@ export const PostRidePage: React.FC = () => {
                     ))}
                   </select>
                 </div>
+              </div>
+
+              {/* Interactive Google Maps Multi-Road Selector */}
+              <div className="pt-4 border-t border-[#DDE1DE]">
+                <PickupAndRouteNavigationMap
+                  originText={PRESET_LOCATIONS[originIndex]?.text}
+                  destinationText={PRESET_LOCATIONS[destIndex]?.text}
+                  compact
+                  onOriginChange={(newOrig) => {
+                    const idx = PRESET_LOCATIONS.findIndex(
+                      (p) =>
+                        p.text.toLowerCase().includes(newOrig.toLowerCase()) ||
+                        newOrig.toLowerCase().includes(p.text.toLowerCase())
+                    );
+                    if (idx !== -1) setOriginIndex(idx);
+                  }}
+                  onDestinationChange={(newDest) => {
+                    const idx = PRESET_LOCATIONS.findIndex(
+                      (p) =>
+                        p.text.toLowerCase().includes(newDest.toLowerCase()) ||
+                        newDest.toLowerCase().includes(p.text.toLowerCase())
+                    );
+                    if (idx !== -1) setDestIndex(idx);
+                  }}
+                />
               </div>
             </motion.div>
           )}

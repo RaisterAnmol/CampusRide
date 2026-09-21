@@ -740,6 +740,22 @@ export async function seedDemoData() {
     plateLast4: "6640",
   });
 
+  const snehaVehicle = await Vehicle.create({
+    ownerUserId: sneha._id,
+    type: "car",
+    model: "Maruti Suzuki Swift (Fire Red)",
+    capacity: 4,
+    plateLast4: "5512",
+  });
+
+  const tanviVehicle = await Vehicle.create({
+    ownerUserId: tanvi._id,
+    type: "car",
+    model: "Tata Punch EV (Empowered Oxide)",
+    capacity: 4,
+    plateLast4: "8890",
+  });
+
   // ==========================================
   // 3. ACTIVE COMMUTE RIDES
   // ==========================================
@@ -1049,6 +1065,511 @@ export async function seedDemoData() {
     availableSeats: 3,
     vehicleId: meeraVehicle._id,
     status: "active",
+  });
+
+  // Ride 14: Ananya's Campus Shuttle (UIT Building -> USCS Building) - Women-Friendly Intra-Campus Ride
+  const ananyaUitToUscsRide = await Ride.create({
+    creator: ananya._id,
+    origin: {
+      text: "UIT Building (Uttaranchal Institute of Technology)",
+      lat: 30.3432,
+      lng: 77.9448,
+    },
+    destination: {
+      text: "USCS Building (School of Computing Sciences)",
+      lat: 30.3428,
+      lng: 77.9456,
+    },
+    departureTime: new Date(now.getTime() + 1 * 60 * 60 * 1000),
+    availableSeats: 3,
+    pricePerSeat: 15,
+    vehicleId: ananyaVehicle._id,
+    status: "active",
+    recurringSchedule: {
+      daysOfWeek: [1, 2, 3, 4, 5],
+      time: "08:30",
+    },
+  });
+
+  // Ride 15: Meera's PG Hub Express (Suddhowala Chowk -> UIT Building) - Women-Friendly
+  const meeraSuddhowalaToUitRide = await Ride.create({
+    creator: meera._id,
+    origin: {
+      text: "Suddhowala Chowk (Student PG Hub)",
+      lat: 30.3475,
+      lng: 77.9320,
+    },
+    destination: {
+      text: "UIT Building (Uttaranchal Institute of Technology)",
+      lat: 30.3432,
+      lng: 77.9448,
+    },
+    departureTime: new Date(now.getTime() + 1.2 * 60 * 60 * 1000),
+    availableSeats: 3,
+    pricePerSeat: 20,
+    vehicleId: meeraVehicle._id,
+    status: "active",
+    recurringSchedule: {
+      daysOfWeek: [1, 2, 3, 4, 5],
+      time: "08:45",
+    },
+  });
+
+  // Ride 16: Sneha's City Connect (Ballupur Chowk -> Campus Gate 1) - Women-Friendly
+  const snehaBallupurToGate1Ride = await Ride.create({
+    creator: sneha._id,
+    origin: {
+      text: "Ballupur Chowk (City Entrance)",
+      lat: 30.3395,
+      lng: 78.0125,
+    },
+    destination: {
+      text: "Campus Gate 1 (Main Entrance, Premnagar Road)",
+      lat: 30.3415,
+      lng: 77.9440,
+    },
+    departureTime: new Date(now.getTime() + 1.4 * 60 * 60 * 1000),
+    availableSeats: 3,
+    pricePerSeat: 35,
+    vehicleId: snehaVehicle._id,
+    status: "active",
+    recurringSchedule: {
+      daysOfWeek: [1, 2, 3, 4, 5],
+      time: "08:15",
+    },
+  });
+
+  // Ride 17: Ananya's Clock Tower Commute (Clock Tower -> USCS Building) - Women-Friendly
+  const ananyaClockTowerToUscsRide = await Ride.create({
+    creator: ananya._id,
+    origin: {
+      text: "Clock Tower (Ghanta Ghar / Paltan Bazaar)",
+      lat: 30.3256,
+      lng: 78.0437,
+    },
+    destination: {
+      text: "USCS Building (School of Computing Sciences)",
+      lat: 30.3428,
+      lng: 77.9456,
+    },
+    departureTime: new Date(now.getTime() + 1.6 * 60 * 60 * 1000),
+    availableSeats: 2,
+    pricePerSeat: 45,
+    vehicleId: ananyaVehicle._id,
+    status: "active",
+    recurringSchedule: {
+      daysOfWeek: [1, 2, 3, 4, 5],
+      time: "08:20",
+    },
+  });
+
+  // Ride 18: Tanvi's Management Shuttle (Premnagar Chowk -> BBA Building) - Women-Friendly
+  const tanviPremnagarToBbaRide = await Ride.create({
+    creator: tanvi._id,
+    origin: {
+      text: "Premnagar Chowk Market",
+      lat: 30.3340,
+      lng: 77.9620,
+    },
+    destination: {
+      text: "BBA Building (Uttaranchal Institute of Management)",
+      lat: 30.3420,
+      lng: 77.9461,
+    },
+    departureTime: new Date(now.getTime() + 1.8 * 60 * 60 * 1000),
+    availableSeats: 3,
+    pricePerSeat: 20,
+    vehicleId: tanviVehicle._id,
+    status: "active",
+    recurringSchedule: {
+      daysOfWeek: [1, 2, 3, 4, 5],
+      time: "08:50",
+    },
+  });
+
+  // Ride 19: Meera's Intra-Campus Research Shuttle (UIT Building -> Central Academic Library) - Women-Friendly
+  const meeraUitToLibRide = await Ride.create({
+    creator: meera._id,
+    origin: {
+      text: "UIT Building (Uttaranchal Institute of Technology)",
+      lat: 30.3432,
+      lng: 77.9448,
+    },
+    destination: {
+      text: "Central Academic Library & Law Block",
+      lat: 30.3425,
+      lng: 77.9450,
+    },
+    departureTime: new Date(now.getTime() + 2 * 60 * 60 * 1000),
+    availableSeats: 3,
+    pricePerSeat: 15,
+    vehicleId: meeraVehicle._id,
+    status: "active",
+    recurringSchedule: {
+      daysOfWeek: [1, 2, 3, 4, 5],
+      time: "09:30",
+    },
+  });
+
+  // Ride 20: Aditya's Campus Intra-Connector (UIT Building -> USCS Building)
+  const adityaUitToUscsRide = await Ride.create({
+    creator: aditya._id,
+    origin: {
+      text: "UIT Building (Uttaranchal Institute of Technology)",
+      lat: 30.3432,
+      lng: 77.9448,
+    },
+    destination: {
+      text: "USCS Building (School of Computing Sciences)",
+      lat: 30.3428,
+      lng: 77.9456,
+    },
+    departureTime: new Date(now.getTime() + 2.2 * 60 * 60 * 1000),
+    availableSeats: 3,
+    pricePerSeat: 15,
+    vehicleId: adityaVehicle._id,
+    status: "active",
+    recurringSchedule: {
+      daysOfWeek: [1, 2, 3, 4, 5],
+      time: "09:00",
+    },
+  });
+
+  // Ride 21: Rohan's Student Corridor (Premnagar Chowk -> USCS Building)
+  const rohanPremnagarToUscsRide = await Ride.create({
+    creator: rohan._id,
+    origin: {
+      text: "Premnagar Chowk Market",
+      lat: 30.3340,
+      lng: 77.9620,
+    },
+    destination: {
+      text: "USCS Building (School of Computing Sciences)",
+      lat: 30.3428,
+      lng: 77.9456,
+    },
+    departureTime: new Date(now.getTime() + 2.4 * 60 * 60 * 1000),
+    availableSeats: 1,
+    pricePerSeat: 20,
+    vehicleId: rohanVehicle._id,
+    status: "active",
+    recurringSchedule: {
+      daysOfWeek: [1, 2, 3, 4, 5],
+      time: "09:10",
+    },
+  });
+
+  // Ride 22: Aditya's East Corridor Express (Ballupur Chowk -> UIT Building)
+  const adityaBallupurToUitRide = await Ride.create({
+    creator: aditya._id,
+    origin: {
+      text: "Ballupur Chowk (City Entrance)",
+      lat: 30.3395,
+      lng: 78.0125,
+    },
+    destination: {
+      text: "UIT Building (Uttaranchal Institute of Technology)",
+      lat: 30.3432,
+      lng: 77.9448,
+    },
+    departureTime: new Date(now.getTime() + 2.6 * 60 * 60 * 1000),
+    availableSeats: 2,
+    pricePerSeat: 40,
+    vehicleId: adityaVehicle._id,
+    status: "active",
+    recurringSchedule: {
+      daysOfWeek: [1, 2, 3, 4, 5],
+      time: "08:10",
+    },
+  });
+
+  // Ride 23: Kabir's City Center Link (Clock Tower -> UIT Building)
+  const kabirClockTowerToUitRide = await Ride.create({
+    creator: kabir._id,
+    origin: {
+      text: "Clock Tower (Ghanta Ghar / Paltan Bazaar)",
+      lat: 30.3256,
+      lng: 78.0437,
+    },
+    destination: {
+      text: "UIT Building (Uttaranchal Institute of Technology)",
+      lat: 30.3432,
+      lng: 77.9448,
+    },
+    departureTime: new Date(now.getTime() + 2.8 * 60 * 60 * 1000),
+    availableSeats: 3,
+    pricePerSeat: 50,
+    vehicleId: kabirVehicle._id,
+    status: "active",
+    recurringSchedule: {
+      daysOfWeek: [1, 2, 3, 4, 5],
+      time: "08:00",
+    },
+  });
+
+  // Ride 24: Aditya's Terminal Express (ISBT Dehradun -> Campus Gate 1)
+  const adityaIsbtToGate1Ride = await Ride.create({
+    creator: aditya._id,
+    origin: {
+      text: "ISBT Dehradun (Inter-State Bus Terminal)",
+      lat: 30.2885,
+      lng: 78.0080,
+    },
+    destination: {
+      text: "Campus Gate 1 (Main Entrance, Premnagar Road)",
+      lat: 30.3415,
+      lng: 77.9440,
+    },
+    departureTime: new Date(now.getTime() + 3 * 60 * 60 * 1000),
+    availableSeats: 3,
+    pricePerSeat: 55,
+    vehicleId: adityaVehicle._id,
+    status: "active",
+    recurringSchedule: {
+      daysOfWeek: [1, 2, 3, 4, 5],
+      time: "07:45",
+    },
+  });
+
+  // Ride 25: Vikram's Industrial Route (Selaqui Hub -> UIT Building)
+  const vikramSelaquiToUitRide = await Ride.create({
+    creator: vikram._id,
+    origin: {
+      text: "Selaqui Industrial & Institutional Hub",
+      lat: 30.3685,
+      lng: 77.8540,
+    },
+    destination: {
+      text: "UIT Building (Uttaranchal Institute of Technology)",
+      lat: 30.3432,
+      lng: 77.9448,
+    },
+    departureTime: new Date(now.getTime() + 3.2 * 60 * 60 * 1000),
+    availableSeats: 3,
+    pricePerSeat: 35,
+    vehicleId: vikramVehicle._id,
+    status: "active",
+    recurringSchedule: {
+      daysOfWeek: [1, 2, 3, 4, 5],
+      time: "08:30",
+    },
+  });
+
+  // Ride 26: Tanvi's Transit Link (ISBT Dehradun -> BBA Building) - Women-Friendly
+  const tanviIsbtToBbaRide = await Ride.create({
+    creator: tanvi._id,
+    origin: {
+      text: "ISBT Dehradun (Inter-State Bus Terminal)",
+      lat: 30.2885,
+      lng: 78.0080,
+    },
+    destination: {
+      text: "BBA Building (Uttaranchal Institute of Management)",
+      lat: 30.3420,
+      lng: 77.9461,
+    },
+    departureTime: new Date(now.getTime() + 3.4 * 60 * 60 * 1000),
+    availableSeats: 3,
+    pricePerSeat: 55,
+    vehicleId: tanviVehicle._id,
+    status: "active",
+    recurringSchedule: {
+      daysOfWeek: [1, 2, 3, 4, 5],
+      time: "08:00",
+    },
+  });
+
+  // Ride 27: Sneha's Evening Campus Ride (UIT Building -> Clock Tower) - Women-Friendly
+  const snehaUitToClockTowerRide = await Ride.create({
+    creator: sneha._id,
+    origin: {
+      text: "UIT Building (Uttaranchal Institute of Technology)",
+      lat: 30.3432,
+      lng: 77.9448,
+    },
+    destination: {
+      text: "Clock Tower (Ghanta Ghar / Paltan Bazaar)",
+      lat: 30.3256,
+      lng: 78.0437,
+    },
+    departureTime: new Date(now.getTime() + 6 * 60 * 60 * 1000),
+    availableSeats: 3,
+    pricePerSeat: 45,
+    vehicleId: snehaVehicle._id,
+    status: "active",
+    recurringSchedule: {
+      daysOfWeek: [1, 2, 3, 4, 5],
+      time: "17:15",
+    },
+  });
+
+  // Ride 28: Ananya's Main Route (Premnagar Chowk -> UIT Building) - Women-Friendly
+  const ananyaPremnagarToUitRide = await Ride.create({
+    creator: ananya._id,
+    origin: {
+      text: "Premnagar Chowk Market",
+      lat: 30.3340,
+      lng: 77.9620,
+    },
+    destination: {
+      text: "UIT Building (Uttaranchal Institute of Technology)",
+      lat: 30.3432,
+      lng: 77.9448,
+    },
+    departureTime: new Date(now.getTime() + 1.1 * 60 * 60 * 1000),
+    availableSeats: 3,
+    pricePerSeat: 20,
+    vehicleId: ananyaVehicle._id,
+    status: "active",
+    recurringSchedule: {
+      daysOfWeek: [1, 2, 3, 4, 5],
+      time: "08:15",
+    },
+  });
+
+  // Ride 29: Aditya's Evening Campus Return (UIT Building -> Premnagar Chowk Market)
+  // TOP CLASSMATE MATCH for Rahul & Priya returning to Premnagar
+  const adityaUitToPremnagarRide = await Ride.create({
+    creator: aditya._id,
+    origin: {
+      text: "UIT Building (Uttaranchal Institute of Technology)",
+      lat: 30.3432,
+      lng: 77.9448,
+    },
+    destination: {
+      text: "Premnagar Chowk Market",
+      lat: 30.3340,
+      lng: 77.9620,
+    },
+    departureTime: new Date(now.getTime() + 2.5 * 60 * 60 * 1000),
+    availableSeats: 3,
+    pricePerSeat: 20,
+    vehicleId: adityaVehicle._id,
+    status: "active",
+    recurringSchedule: {
+      daysOfWeek: [1, 2, 3, 4, 5],
+      time: "17:15",
+    },
+  });
+
+  // Ride 30: Ananya's Women-Friendly Return (UIT Building -> Premnagar Chowk Market)
+  const ananyaUitToPremnagarRide = await Ride.create({
+    creator: ananya._id,
+    origin: {
+      text: "UIT Building (Uttaranchal Institute of Technology)",
+      lat: 30.3432,
+      lng: 77.9448,
+    },
+    destination: {
+      text: "Premnagar Chowk Market",
+      lat: 30.3340,
+      lng: 77.9620,
+    },
+    departureTime: new Date(now.getTime() + 2.7 * 60 * 60 * 1000),
+    availableSeats: 3,
+    pricePerSeat: 20,
+    vehicleId: ananyaVehicle._id,
+    status: "active",
+    recurringSchedule: {
+      daysOfWeek: [1, 2, 3, 4, 5],
+      time: "17:30",
+    },
+  });
+
+  // Ride 31: Sneha's PG Return Shuttle (UIT Building -> Premnagar Chowk Market) - Women-Friendly
+  const snehaUitToPremnagarRide = await Ride.create({
+    creator: sneha._id,
+    origin: {
+      text: "UIT Building (Uttaranchal Institute of Technology)",
+      lat: 30.3432,
+      lng: 77.9448,
+    },
+    destination: {
+      text: "Premnagar Chowk Market",
+      lat: 30.3340,
+      lng: 77.9620,
+    },
+    departureTime: new Date(now.getTime() + 3.0 * 60 * 60 * 1000),
+    availableSeats: 3,
+    pricePerSeat: 20,
+    vehicleId: snehaVehicle._id,
+    status: "active",
+    recurringSchedule: {
+      daysOfWeek: [1, 2, 3, 4, 5],
+      time: "17:00",
+    },
+  });
+
+  // Ride 32: Rohan's PG Express (UIT Building -> Suddhowala Chowk)
+  const rohanUitToSuddhowalaRide = await Ride.create({
+    creator: rohan._id,
+    origin: {
+      text: "UIT Building (Uttaranchal Institute of Technology)",
+      lat: 30.3432,
+      lng: 77.9448,
+    },
+    destination: {
+      text: "Suddhowala Chowk (Student PG Hub)",
+      lat: 30.3475,
+      lng: 77.9320,
+    },
+    departureTime: new Date(now.getTime() + 2.8 * 60 * 60 * 1000),
+    availableSeats: 1,
+    pricePerSeat: 15,
+    vehicleId: rohanVehicle._id,
+    status: "active",
+    recurringSchedule: {
+      daysOfWeek: [1, 2, 3, 4, 5],
+      time: "16:45",
+    },
+  });
+
+  // Ride 33: Vikram's West Highway Return (UIT Building -> Selaqui Industrial & Institutional Hub)
+  const vikramUitToSelaquiRide = await Ride.create({
+    creator: vikram._id,
+    origin: {
+      text: "UIT Building (Uttaranchal Institute of Technology)",
+      lat: 30.3432,
+      lng: 77.9448,
+    },
+    destination: {
+      text: "Selaqui Industrial & Institutional Hub",
+      lat: 30.3685,
+      lng: 77.8540,
+    },
+    departureTime: new Date(now.getTime() + 3.5 * 60 * 60 * 1000),
+    availableSeats: 3,
+    pricePerSeat: 35,
+    vehicleId: vikramVehicle._id,
+    status: "active",
+    recurringSchedule: {
+      daysOfWeek: [1, 2, 3, 4, 5],
+      time: "17:45",
+    },
+  });
+
+  // Ride 34: Tanvi's Return Route (BBA Building -> Premnagar Chowk Market) - Women-Friendly
+  const tanviBbaToPremnagarRide = await Ride.create({
+    creator: tanvi._id,
+    origin: {
+      text: "BBA Building (Uttaranchal Institute of Management)",
+      lat: 30.3420,
+      lng: 77.9461,
+    },
+    destination: {
+      text: "Premnagar Chowk Market",
+      lat: 30.3340,
+      lng: 77.9620,
+    },
+    departureTime: new Date(now.getTime() + 2.9 * 60 * 60 * 1000),
+    availableSeats: 3,
+    pricePerSeat: 20,
+    vehicleId: tanviVehicle._id,
+    status: "active",
+    recurringSchedule: {
+      daysOfWeek: [1, 2, 3, 4, 5],
+      time: "16:30",
+    },
   });
 
   // ==========================================
