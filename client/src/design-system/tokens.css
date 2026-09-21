@@ -1,0 +1,49 @@
+:root {
+  /* Backgrounds */
+  --cr-bg-base: #F5F6F3;
+  --cr-bg-canvas: #FBFBFA;
+  --cr-bg-raised: #FFFFFF;
+  --cr-bg-inverse: #111111;
+  --cr-bg-subtle: #F0F2ED;
+
+  /* Foregrounds */
+  --cr-fg-primary: #111111;
+  --cr-fg-secondary: #5B5F58;
+  --cr-fg-muted: #8A9085;
+  --cr-fg-inverse: #F5F6F3;
+
+  /* Brand - Deep Campus Green */
+  --cr-brand-primary: #143D32;
+  --cr-brand-hover: #0F2E26;
+  --cr-brand-subtle: #E8F4F0;
+  --cr-brand-border: #20594B;
+
+  /* Accent - University Blue */
+  --cr-accent-primary: #1769FF;
+  --cr-accent-hover: #0F52CC;
+  --cr-accent-subtle: #EBF2FF;
+
+  /* Status Colors */
+  --cr-status-success: #1E8E5A;
+  --cr-status-success-subtle: #E7F6EE;
+  --cr-status-warning: #B45309;
+  --cr-status-warning-subtle: #FEF3C7;
+  --cr-status-danger: #C0392B;
+  --cr-status-danger-subtle: #FDE8E7;
+
+  /* Borders */
+  --cr-border-subtle: #E4E5E1;
+  --cr-border-strong: #111111;
+  --cr-border-focus: #143D32;
+
+  /* Shadows */
+  --cr-shadow-sm: 0 1px 2px rgba(17, 17, 17, 0.06);
+  --cr-shadow-md: 0 4px 12px rgba(17, 17, 17, 0.08);
+  --cr-shadow-lg: 0 12px 32px rgba(17, 17, 17, 0.12);
+
+  /* Transitions */
+  --cr-duration-fast: 150ms;
+  --cr-duration-base: 250ms;
+  --cr-duration-slow: 400ms;
+  --cr-ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+}

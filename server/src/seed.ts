@@ -1,0 +1,1509 @@
+import bcrypt from "bcryptjs";
+import mongoose from "mongoose";
+import crypto from "crypto";
+import {
+  User,
+  Vehicle,
+  Ride,
+  Trip,
+  Review,
+  RideRequest,
+  Conversation,
+  Institution,
+  Campus,
+  PickupHub,
+  Geofence,
+  VerificationRequest,
+  EmergencyIncident,
+  Notification,
+} from "./models";
+import { connectDB, disconnectDB } from "./utils/db";
+
+function makeHashedOtp(code: string) {
+  const otpSalt = crypto.randomBytes(16).toString("hex");
+  const otpHash = crypto
+    .createHash("sha256")
+    .update(code + otpSalt)
+    .digest("hex");
+  return {
+    otp: code,
+    otpHash,
+    otpSalt,
+    otpExpiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days for demo data
+    otpAttempts: 0,
+    isLocked: false,
+  };
+}
+
+export async function seedDemoData() {
+  console.log("[Seed] Populating rich campus demo data across all entities...");
+
+  // Clear existing collections
+  await Promise.all([
+    User.deleteMany({}),
+    Vehicle.deleteMany({}),
+    Ride.deleteMany({}),
+    RideRequest.deleteMany({}),
+    Trip.deleteMany({}),
+    Conversation.deleteMany({}),
+    Review.deleteMany({}),
+    Institution.deleteMany({}),
+    Campus.deleteMany({}),
+    PickupHub.deleteMany({}),
+    Geofence.deleteMany({}),
+    VerificationRequest.deleteMany({}),
+    EmergencyIncident.deleteMany({}),
+    Notification.deleteMany({}),
+  ]);
+
+  const DEFAULT_SEED_PASSWORD = process.env.DEMO_USER_PASSWORD || "CampusRide2025!";
+  const passwordHash = await bcrypt.hash(DEFAULT_SEED_PASSWORD, 10);
+
+  // ==========================================
+  // 0. MULTI-INSTITUTION INFRASTRUCTURE
+  // ==========================================
+  const dtuInstitution = await Institution.create({
+    name: "Delhi Technological University",
+    code: "DTU",
+    domain: "dtu.ac.in",
+    allowedDomains: ["dtu.ac.in", "college.edu"],
+    active: true,
+  });
+
+  const iitInstitution = await Institution.create({
+    name: "Indian Institute of Technology Delhi",
+    code: "IITD",
+    domain: "iitd.ac.in",
+    allowedDomains: ["iitd.ac.in", "college.edu"],
+    active: true,
+  });
+
+  const dtuCampus = await Campus.create({
+    institutionId: dtuInstitution._id,
+    name: "Main Campus - Bawana Road",
+    code: "DTU-MAIN",
+    location: {
+      type: "Point",
+      coordinates: [77.1173, 28.7501],
+    },
+    address: "Shahbad Daulatpur, Main Bawana Road, Delhi 110042",
+    active: true,
+  });
+
+  const hubGate1 = await PickupHub.create({
+    institutionId: dtuInstitution._id,
+    campusId: dtuCampus._id,
+    name: "Campus Main Gate 1 (Bawana Road)",
+    code: "GATE-1",
+    location: {
+      type: "Point",
+      coordinates: [77.1165, 28.7495],
+    },
+    address: "Main Entrance Gate 1, Bawana Road, Delhi",
+    radiusMeters: 50,
+    description: "Designated shelter with CCTV and 24/7 campus security booth",
+    active: true,
+  });
+
+  const hubLibrary = await PickupHub.create({
+    institutionId: dtuInstitution._id,
+    campusId: dtuCampus._id,
+    name: "Central Library Roundabout",
+    code: "LIB-RO",
+    location: {
+      type: "Point",
+      coordinates: [77.118, 28.7505],
+    },
+    address: "Knowledge Square, Central University Circle",
+    radiusMeters: 40,
+    description: "Well-lit passenger waiting area near Academic Block 2",
+    active: true,
+  });
+
+  const hubHostel = await PickupHub.create({
+    institutionId: dtuInstitution._id,
+    campusId: dtuCampus._id,
+    name: "Hostel Block 4 Transit Bay",
+    code: "HOSTEL-4",
+    location: {
+      type: "Point",
+      coordinates: [77.12, 28.752],
+    },
+    address: "South Residential Corridor",
+    radiusMeters: 60,
+    description: "Designated carpool bay with solar streetlighting",
+    active: true,
+  });
+
+  const dtuGeofence = await Geofence.create({
+    institutionId: dtuInstitution._id,
+    campusId: dtuCampus._id,
+    name: "DTU Main Perimeter Safe Zone",
+    type: "campus_boundary",
+    center: {
+      latitude: 28.7501,
+      longitude: 77.1173,
+    },
+    radiusMeters: 1800,
+    active: true,
+  });
+
+  // ==========================================
+  // 0.2 UTTARANCHAL UNIVERSITY CAMPUS & HUBS (Dehradun)
+  // ==========================================
+  const uuInstitution = await Institution.create({
+    name: "Uttaranchal University",
+    code: "UU",
+    domain: "uuofficial.edu.in",
+    allowedDomains: ["uuofficial.edu.in", "college.edu"],
+    active: true,
+  });
+
+  const uuCampus = await Campus.create({
+    institutionId: uuInstitution._id,
+    name: "Main Campus - Arcadia Grant, Premnagar",
+    code: "UU-MAIN",
+    location: {
+      type: "Point",
+      coordinates: [77.9452, 30.3426],
+    },
+    address: "Arcadia Grant, P.O. Chandanwari, Premnagar, Dehradun 248007",
+    active: true,
+  });
+
+  // Designated Uttaranchal University Campus Pickup Hubs
+  const hubUit = await PickupHub.create({
+    institutionId: uuInstitution._id,
+    campusId: uuCampus._id,
+    name: "UIT Building (Uttaranchal Institute of Technology)",
+    code: "UU-UIT",
+    location: {
+      type: "Point",
+      coordinates: [77.9448, 30.3432],
+    },
+    address: "Engineering & Tech Block North Porch, Dehradun",
+    radiusMeters: 50,
+    description: "Designated carpool bay with EV charging, passenger bench, and 24/7 CCTV surveillance",
+    active: true,
+  });
+
+  const hubUscs = await PickupHub.create({
+    institutionId: uuInstitution._id,
+    campusId: uuCampus._id,
+    name: "USCS Building (School of Computing Sciences)",
+    code: "UU-USCS",
+    location: {
+      type: "Point",
+      coordinates: [77.9456, 30.3428],
+    },
+    address: "Computing Sciences Quad Walkway, Dehradun",
+    radiusMeters: 45,
+    description: "Covered passenger waiting shelter with student safety help point and security post",
+    active: true,
+  });
+
+  const hubBba = await PickupHub.create({
+    institutionId: uuInstitution._id,
+    campusId: uuCampus._id,
+    name: "BBA Building (Uttaranchal Institute of Management)",
+    code: "UU-BBA",
+    location: {
+      type: "Point",
+      coordinates: [77.9461, 30.3420],
+    },
+    address: "Management & Commerce Circle, Dehradun",
+    radiusMeters: 40,
+    description: "Well-lit carpool pickup circle with campus security desk and covered bus bay",
+    active: true,
+  });
+
+  const hubLibraryUU = await PickupHub.create({
+    institutionId: uuInstitution._id,
+    campusId: uuCampus._id,
+    name: "Central Academic Library & Law Block",
+    code: "UU-LIB",
+    location: {
+      type: "Point",
+      coordinates: [77.9450, 30.3425],
+    },
+    address: "Knowledge Square, Central University Campus, Dehradun",
+    radiusMeters: 40,
+    description: "Pedestrian plaza waiting zone near Law College Dehradun (LCD)",
+    active: true,
+  });
+
+  const hubGate1UU = await PickupHub.create({
+    institutionId: uuInstitution._id,
+    campusId: uuCampus._id,
+    name: "Campus Gate 1 (Main Entrance, Premnagar Road)",
+    code: "UU-GATE1",
+    location: {
+      type: "Point",
+      coordinates: [77.9440, 30.3415],
+    },
+    address: "Main Security Gate 1, Premnagar Road, Dehradun",
+    radiusMeters: 60,
+    description: "Main security checkpost with automated barrier, illuminated waiting bay, and CCTV",
+    active: true,
+  });
+
+  // Regional Dehradun Corridor Hubs
+  const hubPremnagar = await PickupHub.create({
+    institutionId: uuInstitution._id,
+    campusId: uuCampus._id,
+    name: "Premnagar Chowk Transit Bay",
+    code: "PREMNAGAR",
+    location: {
+      type: "Point",
+      coordinates: [77.9620, 30.3340],
+    },
+    address: "Premnagar Main Bazaar, Chakrata Road, Dehradun",
+    radiusMeters: 75,
+    description: "Major suburban carpool connection point for university students and faculty",
+    active: true,
+  });
+
+  const hubSuddhowala = await PickupHub.create({
+    institutionId: uuInstitution._id,
+    campusId: uuCampus._id,
+    name: "Suddhowala Chowk (Student PG Hub)",
+    code: "SUDDHOWALA",
+    location: {
+      type: "Point",
+      coordinates: [77.9320, 30.3475],
+    },
+    address: "Suddhowala Junction, Chakrata Road, Dehradun",
+    radiusMeters: 70,
+    description: "Direct transit point connecting surrounding student hostels, cafes, and PGs",
+    active: true,
+  });
+
+  const hubSelaqui = await PickupHub.create({
+    institutionId: uuInstitution._id,
+    campusId: uuCampus._id,
+    name: "Selaqui Industrial & Institutional Bay",
+    code: "SELAQUI",
+    location: {
+      type: "Point",
+      coordinates: [77.8540, 30.3685],
+    },
+    address: "Selaqui Industrial Hub, Chakrata Highway, Dehradun",
+    radiusMeters: 80,
+    description: "Western corridor commuter hub connecting industrial and college parks",
+    active: true,
+  });
+
+  const uuGeofence = await Geofence.create({
+    institutionId: uuInstitution._id,
+    campusId: uuCampus._id,
+    name: "Uttaranchal University Premnagar Safe Zone",
+    type: "campus_boundary",
+    center: {
+      latitude: 30.3426,
+      longitude: 77.9452,
+    },
+    radiusMeters: 2200,
+    active: true,
+  });
+
+  // ==========================================
+  // 0.1 ADMINISTRATORS & MODERATORS
+  // ==========================================
+  const adminUser = await User.create({
+    name: "Dean of Student Safety",
+    email: "admin@campusride.edu",
+    passwordHash,
+    role: "super_admin",
+    college: "Delhi Technological University",
+    year: 5,
+    institutionId: dtuInstitution._id,
+    campusId: dtuCampus._id,
+    phone: "+91 99999 00001",
+    verificationStatus: "verified",
+    isEmailVerified: true,
+    isPhoneVerified: true,
+    rating: 5.0,
+    totalRides: 0,
+    reliabilityScore: 100,
+  });
+
+  const moderatorUser = await User.create({
+    name: "Campus Security Desk Lead",
+    email: "moderator@campusride.edu",
+    passwordHash,
+    role: "moderator",
+    college: "Delhi Technological University",
+    year: 4,
+    institutionId: dtuInstitution._id,
+    campusId: dtuCampus._id,
+    phone: "+91 99999 00002",
+    verificationStatus: "verified",
+    isEmailVerified: true,
+    isPhoneVerified: true,
+    rating: 5.0,
+    totalRides: 0,
+    reliabilityScore: 100,
+  });
+
+  // ==========================================
+  // 1. UNIVERSITY STUDENTS & DRIVERS (Users)
+  // ==========================================
+
+  // 1. Aditya Kumar (Driver - Honda City)
+  const aditya = await User.create({
+    name: "Aditya Kumar",
+    email: "aditya.kumar@college.edu",
+    passwordHash,
+    college: "Uttaranchal University",
+    course: "B.Tech",
+    department: "CSE",
+    year: 3,
+    semester: 5,
+    phone: "+91 98765 43210",
+    avatarURL:
+      "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=200&q=80",
+    verificationStatus: "verified",
+    rating: 4.8,
+    totalRides: 16,
+    gender: "male",
+    preferences: {
+      womenOnlyDriver: false,
+      musicAllowed: true,
+      smokingAllowed: false,
+      petsAllowed: false,
+    },
+    emergencyContact: {
+      name: "Ramesh Kumar (Father)",
+      phone: "+91 98111 22233",
+      relation: "Father",
+    },
+  });
+
+  // 2. Rahul Sharma (Passenger)
+  const rahul = await User.create({
+    name: "Rahul Sharma",
+    email: "rahul.sharma@college.edu",
+    passwordHash,
+    college: "Uttaranchal University",
+    course: "B.Tech",
+    department: "CSE",
+    year: 3,
+    semester: 5,
+    phone: "+91 98765 11223",
+    avatarURL:
+      "https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?auto=format&fit=crop&w=200&q=80",
+    verificationStatus: "verified",
+    rating: 4.9,
+    totalRides: 9,
+    gender: "male",
+    preferences: {
+      womenOnlyDriver: false,
+      musicAllowed: true,
+      smokingAllowed: false,
+      petsAllowed: true,
+    },
+    emergencyContact: {
+      name: "Sunita Sharma (Mother)",
+      phone: "+91 98222 33344",
+      relation: "Mother",
+    },
+  });
+
+  // 3. Priya Singh (Passenger - Women-only preference)
+  const priya = await User.create({
+    name: "Priya Singh",
+    email: "priya.singh@college.edu",
+    passwordHash,
+    college: "Uttaranchal University",
+    course: "B.Tech",
+    department: "CSE",
+    year: 2,
+    semester: 3,
+    phone: "+91 98765 99887",
+    avatarURL:
+      "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=200&q=80",
+    verificationStatus: "verified",
+    rating: 5.0,
+    totalRides: 5,
+    gender: "female",
+    preferences: {
+      womenOnlyDriver: true, // Filters male drivers
+      musicAllowed: true,
+      smokingAllowed: false,
+      petsAllowed: false,
+    },
+    emergencyContact: {
+      name: "Dr. A.K. Singh (Father)",
+      phone: "+91 98333 44455",
+      relation: "Father",
+    },
+  });
+
+  // 4. Ananya Verma (Driver - Hyundai i20 EV, Women-only)
+  const ananya = await User.create({
+    name: "Ananya Verma",
+    email: "ananya.verma@college.edu",
+    passwordHash,
+    college: "Uttaranchal University",
+    course: "MBA",
+    department: "Management",
+    year: 1,
+    semester: 1,
+    phone: "+91 98765 66778",
+    avatarURL:
+      "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=200&q=80",
+    verificationStatus: "verified",
+    rating: 4.9,
+    totalRides: 21,
+    gender: "female",
+    preferences: {
+      womenOnlyDriver: true,
+      musicAllowed: true,
+      smokingAllowed: false,
+      petsAllowed: true,
+    },
+    emergencyContact: {
+      name: "Suman Verma (Mother)",
+      phone: "+91 98444 55566",
+      relation: "Mother",
+    },
+  });
+
+  // 5. Rohan Mehta (Driver - Royal Enfield Himalayan)
+  const rohan = await User.create({
+    name: "Rohan Mehta",
+    email: "rohan.mehta@college.edu",
+    passwordHash,
+    college: "Graphic Era University",
+    course: "B.Tech",
+    department: "CSE",
+    year: 3,
+    semester: 5,
+    phone: "+91 98765 77889",
+    avatarURL:
+      "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=200&q=80",
+    verificationStatus: "verified",
+    rating: 4.7,
+    totalRides: 14,
+    gender: "male",
+    preferences: {
+      womenOnlyDriver: false,
+      musicAllowed: false,
+      smokingAllowed: false,
+      petsAllowed: false,
+    },
+    emergencyContact: {
+      name: "Rajesh Mehta (Uncle)",
+      phone: "+91 98555 66677",
+      relation: "Uncle",
+    },
+  });
+
+  // 6. Sneha Patel (Passenger)
+  const sneha = await User.create({
+    name: "Sneha Patel",
+    email: "sneha.patel@college.edu",
+    passwordHash,
+    college: "Graphic Era University",
+    course: "BCA",
+    department: "Computer Applications",
+    year: 2,
+    semester: 3,
+    phone: "+91 98765 22334",
+    avatarURL:
+      "https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=200&q=80",
+    verificationStatus: "verified",
+    rating: 4.9,
+    totalRides: 8,
+    gender: "female",
+    preferences: {
+      womenOnlyDriver: false,
+      musicAllowed: true,
+      smokingAllowed: false,
+      petsAllowed: false,
+    },
+    emergencyContact: {
+      name: "Manoj Patel (Father)",
+      phone: "+91 98666 77788",
+      relation: "Father",
+    },
+  });
+
+  // 7. Vikram Malhotra (Driver - Maruti Baleno)
+  const vikram = await User.create({
+    name: "Vikram Malhotra",
+    email: "vikram.malhotra@college.edu",
+    passwordHash,
+    college: "UPES",
+    course: "B.Tech",
+    department: "Mechanical",
+    year: 4,
+    semester: 7,
+    phone: "+91 98765 33445",
+    avatarURL:
+      "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=200&q=80",
+    verificationStatus: "verified",
+    rating: 4.6,
+    totalRides: 11,
+    gender: "male",
+    preferences: {
+      womenOnlyDriver: false,
+      musicAllowed: true,
+      smokingAllowed: false,
+      petsAllowed: false,
+    },
+    emergencyContact: {
+      name: "Alok Malhotra (Father)",
+      phone: "+91 98777 88899",
+      relation: "Father",
+    },
+  });
+
+  // 8. Tanvi Sharma (Passenger)
+  const tanvi = await User.create({
+    name: "Tanvi Sharma",
+    email: "tanvi.sharma@college.edu",
+    passwordHash,
+    college: "UPES",
+    course: "B.Tech",
+    department: "ECE",
+    year: 3,
+    semester: 5,
+    phone: "+91 98765 88990",
+    avatarURL:
+      "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?auto=format&fit=crop&w=200&q=80",
+    verificationStatus: "verified",
+    rating: 5.0,
+    totalRides: 6,
+    gender: "female",
+    preferences: {
+      womenOnlyDriver: false,
+      musicAllowed: true,
+      smokingAllowed: false,
+      petsAllowed: false,
+    },
+  });
+
+  // 9. Kabir Sharma (Driver - Tata Nexon EV)
+  const kabir = await User.create({
+    name: "Kabir Sharma",
+    email: "kabir.sharma@college.edu",
+    passwordHash,
+    college: "Delhi Technological University",
+    course: "B.Tech",
+    department: "Civil",
+    year: 4,
+    semester: 8,
+    phone: "+91 98123 45678",
+    avatarURL:
+      "https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?auto=format&fit=crop&w=200&q=80",
+    verificationStatus: "verified",
+    rating: 4.95,
+    totalRides: 28,
+    gender: "male",
+    preferences: {
+      womenOnlyDriver: false,
+      musicAllowed: true,
+      smokingAllowed: false,
+      petsAllowed: true,
+    },
+    emergencyContact: {
+      name: "Col. Sanjeev Sharma (Father)",
+      phone: "+91 98111 55566",
+      relation: "Father",
+    },
+  });
+
+  // 10. Meera Nair (Driver - Kia Sonet)
+  const meera = await User.create({
+    name: "Meera Nair",
+    email: "meera.nair@college.edu",
+    passwordHash,
+    college: "Delhi Technological University",
+    course: "B.Tech",
+    department: "CSE",
+    year: 3,
+    semester: 5,
+    phone: "+91 98234 56789",
+    avatarURL:
+      "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80",
+    verificationStatus: "verified",
+    rating: 4.88,
+    totalRides: 15,
+    gender: "female",
+    preferences: {
+      womenOnlyDriver: true,
+      musicAllowed: true,
+      smokingAllowed: false,
+      petsAllowed: false,
+    },
+  });
+
+  // 11. Arjun Singh (Passenger)
+  const arjun = await User.create({
+    name: "Arjun Singh",
+    email: "arjun.singh@college.edu",
+    passwordHash,
+    college: "Uttaranchal University",
+    course: "BCA",
+    department: "Computer Applications",
+    year: 3,
+    semester: 5,
+    phone: "+91 98345 67890",
+    avatarURL:
+      "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=200&q=80",
+    verificationStatus: "verified",
+    rating: 4.85,
+    totalRides: 12,
+    gender: "male",
+    preferences: {
+      womenOnlyDriver: false,
+      musicAllowed: true,
+      smokingAllowed: false,
+      petsAllowed: false,
+    },
+  });
+
+  // 12. Zoya Khan (Passenger)
+  const zoya = await User.create({
+    name: "Zoya Khan",
+    email: "zoya.khan@college.edu",
+    passwordHash,
+    college: "Graphic Era University",
+    course: "BBA",
+    department: "Management",
+    year: 2,
+    semester: 4,
+    phone: "+91 98456 78901",
+    avatarURL:
+      "https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?auto=format&fit=crop&w=200&q=80",
+    verificationStatus: "verified",
+    rating: 4.95,
+    totalRides: 10,
+    gender: "female",
+    preferences: {
+      womenOnlyDriver: true,
+      musicAllowed: true,
+      smokingAllowed: false,
+      petsAllowed: false,
+    },
+  });
+
+  // ==========================================
+  // 2. VEHICLES
+  // ==========================================
+  const adityaVehicle = await Vehicle.create({
+    ownerUserId: aditya._id,
+    type: "car",
+    model: "Honda City i-VTEC (Silver)",
+    capacity: 4,
+    plateLast4: "4821",
+  });
+
+  const ananyaVehicle = await Vehicle.create({
+    ownerUserId: ananya._id,
+    type: "car",
+    model: "Hyundai i20 Sportz (Polar White)",
+    capacity: 4,
+    plateLast4: "9104",
+  });
+
+  const rohanVehicle = await Vehicle.create({
+    ownerUserId: rohan._id,
+    type: "bike",
+    model: "Royal Enfield Himalayan (Gravel Grey)",
+    capacity: 1,
+    plateLast4: "3218",
+  });
+
+  const vikramVehicle = await Vehicle.create({
+    ownerUserId: vikram._id,
+    type: "car",
+    model: "Maruti Suzuki Baleno (Nexa Blue)",
+    capacity: 4,
+    plateLast4: "7752",
+  });
+
+  const kabirVehicle = await Vehicle.create({
+    ownerUserId: kabir._id,
+    type: "car",
+    model: "Tata Nexon EV Max (Intensi Teal)",
+    capacity: 4,
+    plateLast4: "5019",
+  });
+
+  const meeraVehicle = await Vehicle.create({
+    ownerUserId: meera._id,
+    type: "car",
+    model: "Kia Sonet Turbo (Gravity Grey)",
+    capacity: 4,
+    plateLast4: "6640",
+  });
+
+  // ==========================================
+  // 3. ACTIVE COMMUTE RIDES
+  // ==========================================
+  const now = new Date();
+
+  // Ride 1: Aditya's Morning Express Commute (Campus Gate 1 -> City Metro Station)
+  const adityaDepTime = new Date(now.getTime() + 2 * 60 * 60 * 1000);
+  const adityaRide = await Ride.create({
+    creator: aditya._id,
+    origin: {
+      text: "Campus Gate 1 (Main Entrance)",
+      lat: 28.545,
+      lng: 77.192,
+    },
+    destination: {
+      text: "City Metro Station (Blue Line)",
+      lat: 28.567,
+      lng: 77.208,
+    },
+    departureTime: adityaDepTime,
+    availableSeats: 3,
+    vehicleId: adityaVehicle._id,
+    status: "active",
+  });
+
+  // Ride 1b: Aditya's Evening Return Route (City Metro Station -> Campus Gate 1)
+  const adityaReturnDepTime = new Date(now.getTime() + 6 * 60 * 60 * 1000);
+  const adityaReturnRide = await Ride.create({
+    creator: aditya._id,
+    origin: {
+      text: "City Metro Station (Blue Line)",
+      lat: 28.567,
+      lng: 77.208,
+    },
+    destination: {
+      text: "Campus Gate 1 (Main Entrance)",
+      lat: 28.545,
+      lng: 77.192,
+    },
+    departureTime: adityaReturnDepTime,
+    availableSeats: 2, // 1 seat reserved by Rahul
+    vehicleId: adityaVehicle._id,
+    status: "active",
+  });
+
+  // Ride 2: Ananya's Women-Friendly Route (Campus Gate 1 -> City Metro Station)
+  const ananyaDepTime = new Date(now.getTime() + 2.5 * 60 * 60 * 1000);
+  const ananyaRide = await Ride.create({
+    creator: ananya._id,
+    origin: {
+      text: "Campus Gate 1 (Main Entrance)",
+      lat: 28.545,
+      lng: 77.192,
+    },
+    destination: {
+      text: "City Metro Station (Blue Line)",
+      lat: 28.567,
+      lng: 77.208,
+    },
+    departureTime: ananyaDepTime,
+    availableSeats: 2,
+    vehicleId: ananyaVehicle._id,
+    status: "active",
+    recurringSchedule: {
+      daysOfWeek: [1, 2, 3, 4, 5],
+      time: "09:00",
+    },
+  });
+
+  // Ride 3: Rohan's Tech Park Bike Commute
+  const rohanDepTime = new Date(now.getTime() + 3 * 60 * 60 * 1000);
+  const rohanRide = await Ride.create({
+    creator: rohan._id,
+    origin: {
+      text: "North Campus Hostel Complex",
+      lat: 28.552,
+      lng: 77.185,
+    },
+    destination: {
+      text: "Cyber City Tech Park",
+      lat: 28.495,
+      lng: 77.089,
+    },
+    departureTime: rohanDepTime,
+    availableSeats: 1,
+    vehicleId: rohanVehicle._id,
+    status: "active",
+  });
+
+  // Ride 4: Vikram's Central Station Route
+  const vikramDepTime = new Date(now.getTime() + 5 * 60 * 60 * 1000);
+  const vikramRide = await Ride.create({
+    creator: vikram._id,
+    origin: {
+      text: "Campus Gate 1 (Main Entrance)",
+      lat: 28.545,
+      lng: 77.192,
+    },
+    destination: {
+      text: "Central Railway Station",
+      lat: 28.58,
+      lng: 77.22,
+    },
+    departureTime: vikramDepTime,
+    availableSeats: 3,
+    vehicleId: vikramVehicle._id,
+    status: "active",
+    recurringSchedule: {
+      daysOfWeek: [1, 2, 3, 4, 5],
+      time: "17:30",
+    },
+  });
+
+  // Ride 5: Kabir's Green EV Commute (IIT Delhi -> Connaught Place Central)
+  const kabirDepTime = new Date(now.getTime() + 1.5 * 60 * 60 * 1000);
+  const kabirRide = await Ride.create({
+    creator: kabir._id,
+    origin: {
+      text: "IIT Delhi Main Gate (Hauz Khas)",
+      lat: 28.545,
+      lng: 77.1926,
+    },
+    destination: {
+      text: "Connaught Place Inner Circle",
+      lat: 28.6315,
+      lng: 77.2167,
+    },
+    departureTime: kabirDepTime,
+    availableSeats: 3,
+    vehicleId: kabirVehicle._id,
+    status: "active",
+    recurringSchedule: {
+      daysOfWeek: [1, 2, 3, 4, 5],
+      time: "08:30",
+    },
+  });
+
+  // Ride 6: Meera's Women-Only Commute (IGDTUW Kashmere Gate -> Pitampura Metro)
+  const meeraDepTime = new Date(now.getTime() + 4 * 60 * 60 * 1000);
+  const meeraRide = await Ride.create({
+    creator: meera._id,
+    origin: {
+      text: "Indira Gandhi Technical Campus Gate",
+      lat: 28.6652,
+      lng: 77.2324,
+    },
+    destination: {
+      text: "Pitampura Metro Interchange",
+      lat: 28.6987,
+      lng: 77.1422,
+    },
+    departureTime: meeraDepTime,
+    availableSeats: 3,
+    vehicleId: meeraVehicle._id,
+    status: "active",
+  });
+
+  // Ride 7: Aditya's Airport Connect Route (Tomorrow morning)
+  const tomorrowMorning = new Date(now);
+  tomorrowMorning.setDate(tomorrowMorning.getDate() + 1);
+  tomorrowMorning.setHours(8, 0, 0, 0);
+  const airportRide = await Ride.create({
+    creator: aditya._id,
+    origin: {
+      text: "Airport Terminal 1",
+      lat: 28.556,
+      lng: 77.1,
+    },
+    destination: {
+      text: "Campus Gate 1 (Main Entrance)",
+      lat: 28.545,
+      lng: 77.192,
+    },
+    departureTime: tomorrowMorning,
+    availableSeats: 2,
+    vehicleId: adityaVehicle._id,
+    status: "active",
+  });
+
+  // ==========================================
+  // 3.1 DEHRADUN & CAMPUS HUBS ACTIVE COMMUTE RIDES
+  // ==========================================
+
+  // Ride 8: Aditya's Morning Dehradun Commute (Premnagar Chowk -> UIT Building)
+  const dehradunDepTime1 = new Date(now.getTime() + 1 * 60 * 60 * 1000);
+  const premnagarToUitRide = await Ride.create({
+    creator: aditya._id,
+    origin: {
+      text: "Premnagar Chowk Market",
+      lat: 30.3340,
+      lng: 77.9620,
+    },
+    destination: {
+      text: "UIT Building (Uttaranchal Institute of Technology)",
+      lat: 30.3432,
+      lng: 77.9448,
+    },
+    departureTime: dehradunDepTime1,
+    availableSeats: 3,
+    vehicleId: adityaVehicle._id,
+    status: "active",
+    recurringSchedule: {
+      daysOfWeek: [1, 2, 3, 4, 5],
+      time: "08:45",
+    },
+  });
+
+  // Ride 9: Ananya's Campus Shuttle (Selaqui Industrial Hub -> USCS Building)
+  const dehradunDepTime2 = new Date(now.getTime() + 1.5 * 60 * 60 * 1000);
+  const selaquiToUscsRide = await Ride.create({
+    creator: ananya._id,
+    origin: {
+      text: "Selaqui Industrial & Institutional Hub",
+      lat: 30.3685,
+      lng: 77.8540,
+    },
+    destination: {
+      text: "USCS Building (School of Computing Sciences)",
+      lat: 30.3428,
+      lng: 77.9456,
+    },
+    departureTime: dehradunDepTime2,
+    availableSeats: 3,
+    vehicleId: ananyaVehicle._id,
+    status: "active",
+    recurringSchedule: {
+      daysOfWeek: [1, 2, 3, 4, 5],
+      time: "09:15",
+    },
+  });
+
+  // Ride 10: Rohan's Student Express (Suddhowala Chowk -> BBA Building)
+  const dehradunDepTime3 = new Date(now.getTime() + 2 * 60 * 60 * 1000);
+  const suddhowalaToBbaRide = await Ride.create({
+    creator: rohan._id,
+    origin: {
+      text: "Suddhowala Chowk (Student PG Hub)",
+      lat: 30.3475,
+      lng: 77.9320,
+    },
+    destination: {
+      text: "BBA Building (Uttaranchal Institute of Management)",
+      lat: 30.3420,
+      lng: 77.9461,
+    },
+    departureTime: dehradunDepTime3,
+    availableSeats: 1,
+    vehicleId: rohanVehicle._id,
+    status: "active",
+  });
+
+  // Ride 11: Vikram's West Corridor Route (Vikasnagar Bus Terminal -> UIT Building)
+  const dehradunDepTime4 = new Date(now.getTime() + 2.5 * 60 * 60 * 1000);
+  const vikasnagarToUitRide = await Ride.create({
+    creator: vikram._id,
+    origin: {
+      text: "Vikasnagar Bus Terminal",
+      lat: 30.4350,
+      lng: 77.7710,
+    },
+    destination: {
+      text: "UIT Building (Uttaranchal Institute of Technology)",
+      lat: 30.3432,
+      lng: 77.9448,
+    },
+    departureTime: dehradunDepTime4,
+    availableSeats: 3,
+    vehicleId: vikramVehicle._id,
+    status: "active",
+  });
+
+  // Ride 12: Kabir's Inter-City Highway Express (ISBT Dehradun -> Campus Gate 1)
+  const dehradunDepTime5 = new Date(now.getTime() + 3 * 60 * 60 * 1000);
+  const isbtToUuGateRide = await Ride.create({
+    creator: kabir._id,
+    origin: {
+      text: "ISBT Dehradun (Inter-State Bus Terminal)",
+      lat: 30.2885,
+      lng: 78.0080,
+    },
+    destination: {
+      text: "Campus Gate 1 (Main Entrance, Premnagar Road)",
+      lat: 30.3415,
+      lng: 77.9440,
+    },
+    departureTime: dehradunDepTime5,
+    availableSeats: 3,
+    vehicleId: kabirVehicle._id,
+    status: "active",
+  });
+
+  // Ride 13: Meera's Evening Return Commute (Central Library -> Clock Tower Paltan Bazaar)
+  const dehradunDepTime6 = new Date(now.getTime() + 4 * 60 * 60 * 1000);
+  const libraryToClockTowerRide = await Ride.create({
+    creator: meera._id,
+    origin: {
+      text: "Central Academic Library & Law Block",
+      lat: 30.3425,
+      lng: 77.9450,
+    },
+    destination: {
+      text: "Clock Tower (Ghanta Ghar / Paltan Bazaar)",
+      lat: 30.3256,
+      lng: 78.0437,
+    },
+    departureTime: dehradunDepTime6,
+    availableSeats: 3,
+    vehicleId: meeraVehicle._id,
+    status: "active",
+  });
+
+  // ==========================================
+  // 4. RIDE REQUESTS (Incoming & Bookings)
+  // ==========================================
+
+  // Request 1: Rahul requested and was accepted on Aditya's return ride (Trip is scheduled with live QR/OTP!)
+  const rahulAdityaReq = await RideRequest.create({
+    rideId: adityaReturnRide._id,
+    passengerId: rahul._id,
+    status: "accepted",
+    requestedAt: new Date(now.getTime() - 45 * 60 * 1000),
+  });
+
+  // Request 2: Priya requested and was accepted on Ananya's women-friendly ride
+  const priyaAnanyaReq = await RideRequest.create({
+    rideId: ananyaRide._id,
+    passengerId: priya._id,
+    status: "accepted",
+    requestedAt: new Date(now.getTime() - 40 * 60 * 1000),
+  });
+
+  // Request 3: Tanvi requested a seat on Aditya's ride (Pending review)
+  const tanviAdityaReq = await RideRequest.create({
+    rideId: adityaRide._id,
+    passengerId: tanvi._id,
+    status: "pending",
+    requestedAt: new Date(now.getTime() - 10 * 60 * 1000),
+  });
+
+  // Request 4: Sneha requested a seat on Vikram's evening ride (Pending)
+  const snehaVikramReq = await RideRequest.create({
+    rideId: vikramRide._id,
+    passengerId: sneha._id,
+    status: "pending",
+    requestedAt: new Date(now.getTime() - 15 * 60 * 1000),
+  });
+
+  // Request 5: Arjun requested and was accepted on Kabir's EV ride
+  const arjunKabirReq = await RideRequest.create({
+    rideId: kabirRide._id,
+    passengerId: arjun._id,
+    status: "accepted",
+    requestedAt: new Date(now.getTime() - 30 * 60 * 1000),
+  });
+
+  // Request 6: Zoya requested a seat on Meera's ride (Pending)
+  const zoyaMeeraReq = await RideRequest.create({
+    rideId: meeraRide._id,
+    passengerId: zoya._id,
+    status: "pending",
+    requestedAt: new Date(now.getTime() - 5 * 60 * 1000),
+  });
+
+  // ==========================================
+  // 5. IN-APP CONVERSATIONS & CHAT HISTORIES
+  // ==========================================
+
+  // Conversation 1a: Aditya & Rahul's Evening Return Commute Chat
+  await Conversation.create({
+    rideId: adityaReturnRide._id,
+    participants: [aditya._id, rahul._id],
+    messages: [
+      {
+        senderId: aditya._id,
+        text: "Hey Rahul! Departing from City Metro back towards campus at scheduled time.",
+        time: new Date(now.getTime() - 25 * 60 * 1000),
+      },
+      {
+        senderId: rahul._id,
+        text: "Great! I'm standing right near the Metro Gate 3 in a blue hoodie.",
+        time: new Date(now.getTime() - 20 * 60 * 1000),
+      },
+      {
+        senderId: aditya._id,
+        text: "Got it. Silver Honda City (plate 4821). I'll have the pickup QR code ready on my screen.",
+        time: new Date(now.getTime() - 15 * 60 * 1000),
+      },
+      {
+        senderId: rahul._id,
+        text: "Perfect, I'll scan your QR as soon as I hop in!",
+        time: new Date(now.getTime() - 12 * 60 * 1000),
+      },
+    ],
+  });
+
+  // Conversation 1b: Aditya's Morning Ride Discussion
+  await Conversation.create({
+    rideId: adityaRide._id,
+    participants: [aditya._id, tanvi._id],
+    messages: [
+      {
+        senderId: tanvi._id,
+        text: "Hi Aditya, just requested a seat on your morning ride if you still have room!",
+        time: new Date(now.getTime() - 8 * 60 * 1000),
+      },
+      {
+        senderId: aditya._id,
+        text: "Hi Tanvi, yes plenty of seats available. Let me review and accept!",
+        time: new Date(now.getTime() - 5 * 60 * 1000),
+      },
+    ],
+  });
+
+  // Conversation 2: Ananya & Priya's Women-Only Commute Chat
+  await Conversation.create({
+    rideId: ananyaRide._id,
+    participants: [ananya._id, priya._id],
+    messages: [
+      {
+        senderId: ananya._id,
+        text: "Hi Priya! Glad to connect on CampusRide. Will pick you up right at Gate 1 portico.",
+        time: new Date(now.getTime() - 35 * 60 * 1000),
+      },
+      {
+        senderId: priya._id,
+        text: "Thanks so much Ananya! Really appreciate the verified women-only carpool option.",
+        time: new Date(now.getTime() - 30 * 60 * 1000),
+      },
+      {
+        senderId: ananya._id,
+        text: "Anytime! Safe campus commutes for all of us. See you in the white i20.",
+        time: new Date(now.getTime() - 25 * 60 * 1000),
+      },
+    ],
+  });
+
+  // Conversation 3: Kabir & Arjun's EV Ride Chat
+  await Conversation.create({
+    rideId: kabirRide._id,
+    participants: [kabir._id, arjun._id],
+    messages: [
+      {
+        senderId: kabir._id,
+        text: "Hey Arjun, heading out from IIT Hauz Khas. Tata Nexon EV ready to roll.",
+        time: new Date(now.getTime() - 20 * 60 * 1000),
+      },
+      {
+        senderId: arjun._id,
+        text: "Super clean! I'll be at the flyover bus stop in 5 minutes.",
+        time: new Date(now.getTime() - 15 * 60 * 1000),
+      },
+    ],
+  });
+
+  // ==========================================
+  // 6. LIVE & COMPLETED TRIPS (With Working QR/OTPs)
+  // ==========================================
+
+  // Trip 1: ADITYA (Driver) + RAHUL (Passenger) SCHEDULED TRIP FOR INSTANT QR TESTING!
+  // Both driver and passenger can test QR scanning and verification right now!
+  const adityaRahulTrip = await Trip.create({
+    rideId: adityaReturnRide._id,
+    driverId: aditya._id,
+    passengerIds: [rahul._id],
+    startTime: new Date(now.getTime() + 10 * 60 * 1000),
+    distance: 14.2,
+    status: "scheduled",
+    ...makeHashedOtp("482109"),
+  });
+
+  // Trip 2: ANANYA & PRIYA LIVE in-progress trip with OTP!
+  const ananyaPriyaTrip = await Trip.create({
+    rideId: ananyaRide._id,
+    driverId: ananya._id,
+    passengerIds: [priya._id],
+    startTime: new Date(now.getTime() - 10 * 60 * 1000),
+    distance: 12.8,
+    status: "in_progress",
+    ...makeHashedOtp("681245"),
+  });
+
+  // Trip 3: KABIR & ARJUN SCHEDULED TRIP
+  const kabirArjunTrip = await Trip.create({
+    rideId: kabirRide._id,
+    driverId: kabir._id,
+    passengerIds: [arjun._id],
+    startTime: new Date(now.getTime() + 25 * 60 * 1000),
+    distance: 16.5,
+    status: "scheduled",
+    ...makeHashedOtp("719302"),
+  });
+
+  // Trip 4: Aditya & Rahul completed trip (Yesterday)
+  const trip4 = await Trip.create({
+    rideId: adityaReturnRide._id,
+    driverId: aditya._id,
+    passengerIds: [rahul._id],
+    startTime: new Date(now.getTime() - 24 * 60 * 60 * 1000),
+    endTime: new Date(now.getTime() - 23.3 * 60 * 60 * 1000),
+    distance: 14.5,
+    status: "completed",
+    ...makeHashedOtp("429183"),
+  });
+
+  // Trip 5: Vikram & Sneha completed trip (2 days ago)
+  const trip5 = await Trip.create({
+    rideId: vikramRide._id,
+    driverId: vikram._id,
+    passengerIds: [sneha._id],
+    startTime: new Date(now.getTime() - 48 * 60 * 60 * 1000),
+    endTime: new Date(now.getTime() - 47.4 * 60 * 60 * 1000),
+    distance: 15.2,
+    status: "completed",
+    ...makeHashedOtp("731920"),
+  });
+
+  // Trip 6: Rohan & Rahul completed bike trip (3 days ago)
+  const trip6 = await Trip.create({
+    rideId: rohanRide._id,
+    driverId: rohan._id,
+    passengerIds: [rahul._id],
+    startTime: new Date(now.getTime() - 72 * 60 * 60 * 1000),
+    endTime: new Date(now.getTime() - 71.5 * 60 * 60 * 1000),
+    distance: 18.2,
+    status: "completed",
+    ...makeHashedOtp("895412"),
+  });
+
+  // Trip 7: Aditya & Tanvi completed trip (4 days ago)
+  const trip7 = await Trip.create({
+    rideId: airportRide._id,
+    driverId: aditya._id,
+    passengerIds: [tanvi._id],
+    startTime: new Date(now.getTime() - 96 * 60 * 60 * 1000),
+    endTime: new Date(now.getTime() - 95.2 * 60 * 60 * 1000),
+    distance: 16.0,
+    status: "completed",
+    ...makeHashedOtp("314567"),
+  });
+
+  // ==========================================
+  // 7. VERIFIED STUDENT REVIEWS & RATINGS
+  // ==========================================
+  await Review.create([
+    {
+      tripId: trip4._id,
+      fromUserId: rahul._id,
+      toUserId: aditya._id,
+      rating: 5,
+      comment:
+        "Super punctual! Silver Honda City was very clean and great AC on a hot commute.",
+      createdAt: new Date(now.getTime() - 23 * 60 * 60 * 1000),
+    },
+    {
+      tripId: trip4._id,
+      fromUserId: aditya._id,
+      toUserId: rahul._id,
+      rating: 5,
+      comment:
+        "Rahul was right on time at Gate 1 ATM. Great classmate to carpool with!",
+      createdAt: new Date(now.getTime() - 23 * 60 * 60 * 1000),
+    },
+    {
+      tripId: trip5._id,
+      fromUserId: sneha._id,
+      toUserId: vikram._id,
+      rating: 5,
+      comment:
+        "Smooth and careful driving to the Central Station. Saved me from heavy auto rickshaw surge!",
+      createdAt: new Date(now.getTime() - 47 * 60 * 60 * 1000),
+    },
+    {
+      tripId: trip6._id,
+      fromUserId: rahul._id,
+      toUserId: rohan._id,
+      rating: 5,
+      comment:
+        "Rohan gave an extra helmet and drove super safely on the highway. Quick bike commute!",
+      createdAt: new Date(now.getTime() - 71 * 60 * 60 * 1000),
+    },
+    {
+      tripId: trip7._id,
+      fromUserId: tanvi._id,
+      toUserId: aditya._id,
+      rating: 5,
+      comment:
+        "Airport pickup was flawless. Shared great tips for 1st-year engineering classes!",
+      createdAt: new Date(now.getTime() - 95 * 60 * 60 * 1000),
+    },
+    {
+      tripId: ananyaPriyaTrip._id,
+      fromUserId: priya._id,
+      toUserId: ananya._id,
+      rating: 5,
+      comment:
+        "Best carpool experience ever! Loved the women-only verified safety and quiet EV ride.",
+      createdAt: new Date(now.getTime() - 10 * 60 * 1000),
+    },
+  ]);
+
+  // ==========================================
+  // 6. VERIFICATION REQUESTS (Admin Review Queue)
+  // ==========================================
+  await VerificationRequest.create([
+    {
+      userId: arjun._id,
+      institutionId: dtuInstitution._id,
+      campusId: dtuCampus._id,
+      studentIdentifier: "2023DTU-CS-104",
+      documentType: "student_id",
+      documentStorageKey: `docs/${arjun._id}/student_id_card.png`,
+      documentMimeType: "image/png",
+      documentSizeBytes: 420000,
+      status: "pending",
+    },
+    {
+      userId: aditya._id,
+      institutionId: dtuInstitution._id,
+      campusId: dtuCampus._id,
+      studentIdentifier: "2022DTU-ME-019",
+      documentType: "student_id",
+      documentStorageKey: `docs/${aditya._id}/student_id_card.png`,
+      documentMimeType: "image/png",
+      documentSizeBytes: 380000,
+      status: "approved",
+      reviewedBy: adminUser._id,
+      reviewedAt: new Date(now.getTime() - 48 * 60 * 60 * 1000),
+    },
+    {
+      userId: zoya._id,
+      institutionId: dtuInstitution._id,
+      campusId: dtuCampus._id,
+      studentIdentifier: "2024DTU-EE-082",
+      documentType: "student_id",
+      documentStorageKey: `docs/${zoya._id}/unclear_id.jpg`,
+      documentMimeType: "image/jpeg",
+      documentSizeBytes: 180000,
+      status: "rejected",
+      rejectionReason:
+        "ID photo was blurry. Please re-upload with clear name and roll number.",
+      reviewedBy: adminUser._id,
+      reviewedAt: new Date(now.getTime() - 24 * 60 * 60 * 1000),
+    },
+  ]);
+
+  // ==========================================
+  // 7. ACTIVE EMERGENCY INCIDENT (SOC Live Alert)
+  // ==========================================
+  await EmergencyIncident.create({
+    incidentNumber: `INC-${now.toISOString().slice(0, 10).replace(/-/g, "")}-7K2L`,
+    triggeredBy: rahul._id,
+    tripId: adityaRahulTrip._id,
+    institutionId: dtuInstitution._id,
+    campusId: dtuCampus._id,
+    location: {
+      latitude: 28.7495,
+      longitude: 77.1165,
+      accuracy: 12,
+      address: "Near Gate 1 Roundabout, Outer Ring Road",
+    },
+    status: "ACTIVE",
+    campusSecurityNotified: true,
+    emergencyContactsNotified: [
+      {
+        name: "Suresh Sharma (Father)",
+        phone: "+91 98111 22233",
+        relationship: "Father",
+        dispatchStatus: "MOCK_DEV_DISPATCHED",
+        sentAt: now,
+      },
+    ],
+    securityNotes:
+      "Student pressed in-ride emergency button. Control room dispatch initiated.",
+  });
+
+  // ==========================================
+  // 8. PERSISTENT NOTIFICATIONS
+  // ==========================================
+  await Notification.create([
+    {
+      userId: rahul._id,
+      type: "TRIP_UPDATE",
+      title: "Ride Confirmed with Aditya",
+      body: "Your ride from Rohini Sector 14 to DTU Campus is scheduled for 8:45 AM. Your pickup OTP will be verified by Aditya at boarding.",
+      deliveryChannels: ["in_app", "socket"],
+      deliveryStatus: { in_app: "sent" },
+    },
+    {
+      userId: aditya._id,
+      type: "VERIFICATION_STATUS",
+      title: "Vehicle & Student ID Approved",
+      body: "Your DTU Student ID and Honda City documents have been verified by Campus Administration.",
+      deliveryChannels: ["in_app", "socket"],
+      deliveryStatus: { in_app: "sent" },
+    },
+  ]);
+
+  console.log("[Seed] Demo database fully hydrated with:");
+  console.log("  - 12 Verified University Students across 4 institutions");
+  console.log("  - 2 Campus Security & Administrative accounts");
+  console.log(
+    "  - 3 Universities (UU, DTU, IITD) with 2 Campuses, 11 Pickup Hubs, and 2 Geofences",
+  );
+  console.log("  - 6 Registered Vehicles (Sedans, EVs, Bikes)");
+  console.log("  - 13 Active Campus Commute Offers (including Premnagar, Selaqui, Suddhowala, Vikasnagar & Campus Buildings)");
+  console.log("  - 6 Ride Requests (Pending & Accepted)");
+  console.log("  - 3 Real-Time Group Conversations with chat history");
+  console.log("  - 7 Trips (Live Scheduled & In-Progress with QR/OTPs, plus Completed)");
+  console.log("  - 6 Peer Reviews with 5-star ratings & feedback");
+  console.log("  - 3 Verification Requests (Pending, Approved, Rejected)");
+  console.log(
+    "  - 1 Active Security Incident with Emergency Contact dispatches",
+  );
+
+  return {
+    aditya,
+    rahul,
+    priya,
+    ananya,
+    rohan,
+    sneha,
+    vikram,
+    tanvi,
+    kabir,
+    meera,
+    arjun,
+    zoya,
+    adityaRide,
+    adityaReturnRide,
+    ananyaRide,
+    rohanRide,
+    vikramRide,
+    kabirRide,
+    meeraRide,
+    premnagarToUitRide,
+    selaquiToUscsRide,
+    suddhowalaToBbaRide,
+    vikasnagarToUitRide,
+    isbtToUuGateRide,
+    libraryToClockTowerRide,
+    uuInstitution,
+    uuCampus,
+    hubUit,
+    hubUscs,
+    hubBba,
+    hubGate1UU,
+    hubPremnagar,
+    hubSuddhowala,
+    hubSelaqui,
+    adityaRahulTrip,
+    ananyaPriyaTrip,
+  };
+}
+
+if (require.main === module) {
+  (async () => {
+    try {
+      await connectDB();
+      await seedDemoData();
+      await disconnectDB();
+      process.exit(0);
+    } catch (err) {
+      console.error("[Seed] Error during seeding:", err);
+      process.exit(1);
+    }
+  })();
+}

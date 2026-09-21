@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+Allow: /safety
+Allow: /colleges
+Disallow: /admin
+Disallow: /trips/
+Disallow: /dashboard
+
+Sitemap: https://campusride.edu/sitemap.xml

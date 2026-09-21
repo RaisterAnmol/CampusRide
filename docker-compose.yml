@@ -1,0 +1,59 @@
+version: '3.8'
+
+services:
+  mongodb:
+    image: mongo:6
+    container_name: campusride-mongo
+    ports:
+      - "27017:27017"
+    volumes:
+      - campusride-mongo-data:/data/db
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1024M
+
+  server:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    container_name: campusride-server
+    ports:
+      - "5000:5000"
+    environment:
+      - PORT=5000
+      - NODE_ENV=production
+      - MONGODB_URI=mongodb://mongodb:27017/campusride
+      - JWT_SECRET=${JWT_SECRET:-replace_with_a_secure_random_64_char_string_min}
+      - JWT_REFRESH_SECRET=${JWT_REFRESH_SECRET:-replace_with_a_different_secure_random_string}
+      - ADMIN_SECRET=${ADMIN_SECRET:-replace_with_admin_secret_min_16_chars}
+      - CLIENT_URL=http://localhost:80
+    depends_on:
+      - mongodb
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+
+  client:
+    build:
+      context: ./client
+      dockerfile: Dockerfile
+    container_name: campusride-client
+    ports:
+      - "80:80"
+    depends_on:
+      - server
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+
+volumes:
+  campusride-mongo-data:
