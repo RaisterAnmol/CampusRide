@@ -198,18 +198,17 @@ export const Hero: React.FC = () => {
           ) : (
             <>
               <Link
-                to="/search"
+                to="/login"
                 className="px-6 py-3.5 rounded-xl bg-[#143D32] hover:bg-[#0f2e26] text-white font-medium text-sm transition-all shadow-sm hover:shadow flex items-center gap-2 group"
               >
-                <Search className="w-4 h-4" />
-                <span>Find a Ride</span>
+                <span>Log In to CampusRide</span>
                 <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
               </Link>
               <Link
-                to="/login"
+                to="/register"
                 className="px-6 py-3.5 rounded-xl bg-white hover:bg-slate-50 text-slate-900 font-medium text-sm border border-slate-200 transition-all flex items-center gap-2"
               >
-                <span>Log In / Sign Up</span>
+                <span>Create Student Account</span>
               </Link>
             </>
           )}

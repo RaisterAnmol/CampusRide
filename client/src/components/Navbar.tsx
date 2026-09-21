@@ -26,21 +26,17 @@ export const Navbar: React.FC = () => {
   const isDriver = user?.role === 'driver' || user?.accountType === 'DRIVER';
   const isAdmin = user?.role === 'super_admin' || user?.role === 'campus_admin' || user?.role === 'moderator';
 
-  // Universal Navigation Links
-  const navLinks = [
-    { label: 'Find a Ride', href: '/search' },
-    { label: 'Offer a Ride', href: '/post' },
-    { label: 'Campuses', href: '/colleges' },
-    { label: 'Safety', href: '/safety' },
-  ];
-
-  if (isAdmin) {
-    navLinks.push({ label: 'Admin Dashboard', href: '/admin' });
-  }
-
-  if (user) {
-    navLinks.push({ label: 'Verification', href: '/verification' });
-  }
+  // Navigation Links: Only show AFTER user is logged in
+  const navLinks = user
+    ? [
+        { label: 'Find a Ride', href: '/search' },
+        { label: 'Offer a Ride', href: '/post' },
+        { label: 'Campuses', href: '/colleges' },
+        { label: 'Safety', href: '/safety' },
+        { label: 'Verification', href: '/verification' },
+        ...(isAdmin ? [{ label: 'Admin Dashboard', href: '/admin' }] : []),
+      ]
+    : [];
 
   return (
     <motion.header
@@ -62,25 +58,27 @@ export const Navbar: React.FC = () => {
           </span>
         </Link>
 
-        {/* Desktop Nav Links */}
-        <nav className="hidden md:flex items-center gap-7 text-sm font-medium text-slate-600">
-          {navLinks.map((link) => {
-            const isActive = location.pathname === link.href;
-            return (
-              <Link
-                key={link.label}
-                to={link.href}
-                className={`transition-colors py-1 ${
-                  isActive
-                    ? 'text-[#143D32] font-bold border-b-2 border-[#143D32]'
-                    : 'hover:text-slate-900'
-                }`}
-              >
-                {link.label}
-              </Link>
-            );
-          })}
-        </nav>
+        {/* Desktop Nav Links - Only visible AFTER login */}
+        {user && navLinks.length > 0 && (
+          <nav className="hidden md:flex items-center gap-7 text-sm font-medium text-slate-600">
+            {navLinks.map((link) => {
+              const isActive = location.pathname === link.href;
+              return (
+                <Link
+                  key={link.label}
+                  to={link.href}
+                  className={`transition-colors py-1 ${
+                    isActive
+                      ? 'text-[#143D32] font-bold border-b-2 border-[#143D32]'
+                      : 'hover:text-slate-900'
+                  }`}
+                >
+                  {link.label}
+                </Link>
+              );
+            })}
+          </nav>
+        )}
 
         {/* Right Action Cluster: Real Login / Auth State */}
         <div className="hidden md:flex items-center gap-3">
@@ -190,27 +188,36 @@ export const Navbar: React.FC = () => {
 
         {/* Mobile Action Cluster */}
         <div className="flex md:hidden items-center gap-2">
-          {!user && (
-            <Link
-              to="/login"
-              className="px-3 py-1.5 text-xs font-bold text-[#143D32] bg-emerald-50 border border-emerald-200 rounded-xl shadow-xs"
+          {!user ? (
+            <div className="flex items-center gap-2">
+              <Link
+                to="/login"
+                className="px-3 py-1.5 text-xs font-bold text-slate-700 hover:text-[#143D32] bg-slate-100 border border-slate-200 rounded-xl"
+              >
+                Log In
+              </Link>
+              <Link
+                to="/register"
+                className="px-3 py-1.5 text-xs font-bold text-white bg-[#143D32] rounded-xl shadow-xs"
+              >
+                Register
+              </Link>
+            </div>
+          ) : (
+            <button
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="p-2 text-slate-800 rounded-xl hover:bg-black/5 transition-colors cursor-pointer"
+              aria-label="Toggle navigation menu"
             >
-              Log In
-            </Link>
+              {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+            </button>
           )}
-          <button
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="p-2 text-slate-800 rounded-xl hover:bg-black/5 transition-colors cursor-pointer"
-            aria-label="Toggle navigation menu"
-          >
-            {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-          </button>
         </div>
       </div>
 
-      {/* Mobile Menu */}
+      {/* Mobile Menu - Only shown for authenticated users */}
       <AnimatePresence>
-        {mobileMenuOpen && (
+        {mobileMenuOpen && user && (
           <motion.div
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
