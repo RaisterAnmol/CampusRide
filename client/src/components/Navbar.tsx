@@ -170,32 +170,42 @@ export const Navbar: React.FC = () => {
               </button>
             </div>
           ) : (
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2.5">
               <Link
                 to="/login"
-                className="px-4 py-2 text-xs font-bold text-slate-700 hover:text-[#143D32] hover:bg-slate-200/60 rounded-xl transition-colors"
+                className="px-4 py-2 text-xs font-bold text-slate-700 hover:text-[#143D32] hover:bg-slate-100 rounded-xl transition-colors border border-slate-300 shadow-2xs"
               >
-                Log in
+                Log In
               </Link>
               <Link
                 to="/register"
                 className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#143D32] hover:bg-[#0f2e26] text-white text-xs font-bold shadow-xs hover:shadow transition-all hover:-translate-y-0.5 cursor-pointer"
               >
-                <span>Sign up</span>
+                <span>Register</span>
                 <ArrowRight className="w-3.5 h-3.5" />
               </Link>
             </div>
           )}
         </div>
 
-        {/* Mobile Menu Button */}
-        <button
-          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          className="md:hidden p-2 text-slate-800 rounded-xl hover:bg-black/5 transition-colors"
-          aria-label="Toggle navigation menu"
-        >
-          {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-        </button>
+        {/* Mobile Action Cluster */}
+        <div className="flex md:hidden items-center gap-2">
+          {!user && (
+            <Link
+              to="/login"
+              className="px-3 py-1.5 text-xs font-bold text-[#143D32] bg-emerald-50 border border-emerald-200 rounded-xl shadow-xs"
+            >
+              Log In
+            </Link>
+          )}
+          <button
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            className="p-2 text-slate-800 rounded-xl hover:bg-black/5 transition-colors cursor-pointer"
+            aria-label="Toggle navigation menu"
+          >
+            {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+          </button>
+        </div>
       </div>
 
       {/* Mobile Menu */}
@@ -278,13 +288,13 @@ export const Navbar: React.FC = () => {
                     to="/login"
                     className="w-full py-2.5 text-center text-sm font-bold border border-slate-300 rounded-xl text-slate-800 hover:bg-slate-50 transition-colors"
                   >
-                    Log in
+                    Log In
                   </Link>
                   <Link
                     to="/register"
                     className="w-full py-2.5 text-center text-sm font-bold bg-[#143D32] text-white rounded-xl shadow-xs"
                   >
-                    Sign up
+                    Register
                   </Link>
                 </div>
               )}
