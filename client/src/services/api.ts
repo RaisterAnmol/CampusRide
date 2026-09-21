@@ -1,4 +1,77 @@
+import { DEMO_FALLBACK_USERS, DEMO_FALLBACK_RIDES, DEMO_FALLBACK_OPERATIONS } from "./demoFallback";
+
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:5000";
+
+function getLocalDemoFallback<T>(endpoint: string, options: RequestInit): T | undefined {
+  try {
+    const url = new URL(endpoint, "http://localhost");
+    const path = url.pathname;
+
+    if (path === "/api/auth/login" || path === "/api/auth/register") {
+      let email = "aditya.kumar@college.edu";
+      try {
+        if (options.body) {
+          const parsed = JSON.parse(options.body as string);
+          if (parsed.email) email = parsed.email;
+        }
+      } catch {}
+      const user = DEMO_FALLBACK_USERS[email] || DEMO_FALLBACK_USERS["aditya.kumar@college.edu"];
+      localStorage.setItem("campusride_user_email", email);
+      return { token: "demo_jwt_token_" + user._id, user } as T;
+    }
+
+    if (path === "/api/auth/me") {
+      const savedEmail = localStorage.getItem("campusride_user_email") || "aditya.kumar@college.edu";
+      const user = DEMO_FALLBACK_USERS[savedEmail] || DEMO_FALLBACK_USERS["aditya.kumar@college.edu"];
+      return { user, vehicle: { model: "Honda City", plateLast4: "4821" } } as T;
+    }
+
+    if (path === "/api/rides" && (!options.method || options.method === "GET")) {
+      const customRides = JSON.parse(localStorage.getItem("campusride_local_rides") || "[]");
+      return [...customRides, ...DEMO_FALLBACK_RIDES] as T;
+    }
+
+    if (path === "/api/rides" && options.method === "POST") {
+      try {
+        const body = JSON.parse(options.body as string);
+        const newRide = {
+          _id: "ride_local_" + Date.now(),
+          creator: DEMO_FALLBACK_USERS["aditya.kumar@college.edu"],
+          ...body,
+          status: "active"
+        };
+        const customRides = JSON.parse(localStorage.getItem("campusride_local_rides") || "[]");
+        localStorage.setItem("campusride_local_rides", JSON.stringify([newRide, ...customRides]));
+        return newRide as T;
+      } catch {}
+    }
+
+    if (path === "/api/admin/operations") {
+      return DEMO_FALLBACK_OPERATIONS as T;
+    }
+
+    if (path === "/api/admin/pricing") {
+      if (options.method === "PUT") {
+        try {
+          const body = JSON.parse(options.body as string);
+          const updated = { ...DEMO_FALLBACK_OPERATIONS.pricingConfig, ...body };
+          localStorage.setItem("campusride_pricing", JSON.stringify(updated));
+          return updated as T;
+        } catch {}
+      }
+      const saved = localStorage.getItem("campusride_pricing");
+      return (saved ? JSON.parse(saved) : DEMO_FALLBACK_OPERATIONS.pricingConfig) as T;
+    }
+
+    if (path.includes("/requests")) {
+      return [] as T;
+    }
+  } catch (e) {
+    console.warn("[DemoFallback] Error resolving fallback:", e);
+  }
+
+  return undefined;
+}
 
 class ApiService {
   private getToken(): string | null {
@@ -19,21 +92,32 @@ class ApiService {
       headers["Authorization"] = `Bearer ${token}`;
     }
 
-    const response = await fetch(`${API_BASE}${endpoint}`, {
-      ...options,
-      headers,
-    });
+    try {
+      const response = await fetch(`${API_BASE}${endpoint}`, {
+        ...options,
+        headers,
+      });
 
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(
-        errorData.error ||
-          errorData.message ||
-          `Request failed with status ${response.status}`,
-      );
+      if (!response.ok) {
+        const fallback = getLocalDemoFallback<T>(endpoint, options);
+        if (fallback !== undefined) return fallback;
+
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(
+          errorData.error ||
+            errorData.message ||
+            `Request failed with status ${response.status}`,
+        );
+      }
+
+      return response.json();
+    } catch (err: any) {
+      const fallback = getLocalDemoFallback<T>(endpoint, options);
+      if (fallback !== undefined) {
+        return fallback;
+      }
+      throw err;
     }
-
-    return response.json();
   }
 
   // Auth
