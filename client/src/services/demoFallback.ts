@@ -16,7 +16,8 @@ export const DEMO_FALLBACK_USERS: Record<string, any> = {
     gender: "male",
     preferences: { musicAllowed: true, smokingAllowed: false, womenOnlyDriver: false },
     avatarURL: "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&w=150&q=80",
-    phone: "+91 98765 43210"
+    phone: "+91 98765 43210",
+    vehicle: { model: "Honda City i-VTEC (Silver)", plateLast4: "4821", type: "car" }
   },
   "rahul.sharma@college.edu": {
     _id: "usr_rahul_1002",
@@ -52,7 +53,8 @@ export const DEMO_FALLBACK_USERS: Record<string, any> = {
     gender: "female",
     preferences: { musicAllowed: true, smokingAllowed: false, womenOnlyDriver: true },
     avatarURL: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=150&q=80",
-    phone: "+91 98765 43212"
+    phone: "+91 98765 43212",
+    vehicle: { model: "Maruti Swift (Red)", plateLast4: "5512", type: "car" }
   },
   "admin@campusride.edu": {
     _id: "usr_admin_1000",
@@ -234,22 +236,31 @@ export const DEMO_FALLBACK_OPERATIONS = {
         name: "Aditya Kumar",
         avatarURL: "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&w=150&q=80",
         institution: "Uttaranchal University",
+        college: "Uttaranchal University",
+        department: "CSE",
+        course: "B.Tech",
         academic: "B.Tech (CSE) • Year 3",
         phone: "+91 98765 43210",
         rating: 4.8,
+        vehicle: { model: "Honda City i-VTEC (Silver)", plateLast4: "4821", type: "car" },
         vehicleModel: "Honda City i-VTEC (Silver)",
         vehiclePlate: "4821"
       },
       passengers: [
-        { name: "Rahul Sharma", department: "CSE", college: "Uttaranchal University", emergencyContact: "Father (+91 98111 22334)" },
-        { name: "Tanvi Sharma", department: "ECE", college: "UPES", emergencyContact: "Parent (+91 98222 33445)" }
+        { id: "p1", name: "Rahul Sharma", department: "CSE", college: "Uttaranchal University", emergencyContact: { name: "Father", relation: "Parent", phone: "+91 98111 22334" } },
+        { id: "p2", name: "Tanvi Sharma", department: "ECE", college: "UPES", emergencyContact: { name: "Mother", relation: "Parent", phone: "+91 98222 33445" } }
       ],
+      origin: { text: "Premnagar Chowk Market", coordinates: [77.9620, 30.3340] },
+      destination: { text: "UIT Building (Uttaranchal Institute of Technology)", coordinates: [77.9448, 30.3432] },
       pickupPoint: { text: "Premnagar Chowk Market", coordinates: [77.9620, 30.3340] },
       dropPoint: { text: "UIT Building (Uttaranchal Institute of Technology)", coordinates: [77.9448, 30.3432] },
       bridgeVia: "Nanda Ki Chowki Bridge",
       distanceKm: 8.4,
+      pricePerSeat: 20,
+      totalValue: 40,
       farePerSeat: 20,
       totalCarpoolValue: 40,
+      availableSeats: 2,
       departureTime: new Date(Date.now() + 1800000).toISOString(),
       status: "active"
     },
@@ -259,23 +270,102 @@ export const DEMO_FALLBACK_OPERATIONS = {
         name: "Priya Singh",
         avatarURL: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=150&q=80",
         institution: "Uttaranchal University",
+        college: "Uttaranchal University",
+        department: "ECE",
+        course: "B.Tech",
         academic: "B.Tech (ECE) • Year 3",
         phone: "+91 98765 43212",
         rating: 5.0,
+        vehicle: { model: "Maruti Swift (Red)", plateLast4: "5512", type: "car" },
         vehicleModel: "Maruti Swift (Red)",
         vehiclePlate: "5512"
       },
       passengers: [
-        { name: "Meera Nair", department: "BBA", college: "Uttaranchal University", emergencyContact: "Mother (+91 98333 44556)" }
+        { id: "p3", name: "Meera Nair", department: "BBA", college: "Uttaranchal University", emergencyContact: { name: "Mother", relation: "Parent", phone: "+91 98333 44556" } }
       ],
+      origin: { text: "Suddhowala Chowk (Student PG Hub)", coordinates: [77.9320, 30.3475] },
+      destination: { text: "USCS Building (School of Computing Sciences)", coordinates: [77.9456, 30.3428] },
       pickupPoint: { text: "Suddhowala Chowk (Student PG Hub)", coordinates: [77.9320, 30.3475] },
       dropPoint: { text: "USCS Building (School of Computing Sciences)", coordinates: [77.9456, 30.3428] },
       bridgeVia: "Premnagar Flyover",
       distanceKm: 5.2,
+      pricePerSeat: 15,
+      totalValue: 15,
       farePerSeat: 15,
       totalCarpoolValue: 15,
+      availableSeats: 3,
       departureTime: new Date(Date.now() + 2700000).toISOString(),
       status: "active"
     }
   ]
 };
+
+export const DEMO_FALLBACK_INCIDENTS = [
+  {
+    _id: "inc_01",
+    tripId: "trip_demo_101",
+    reporterId: "usr_priya_1003",
+    reporterName: "Priya Singh",
+    reporterPhone: "+91 98765 43212",
+    incidentType: "route_divergence_warning",
+    status: "RESOLVED",
+    priority: "MEDIUM",
+    location: { text: "Premnagar Flyover Bypass", coordinates: [77.9500, 30.3380] },
+    timestamp: new Date(Date.now() - 3600000).toISOString(),
+    resolutionNotes: "Route divergence verified by security desk: driver took bypass to avoid road construction."
+  }
+];
+
+export const DEMO_FALLBACK_VERIFICATIONS = [
+  {
+    _id: "verif_01",
+    user: {
+      _id: "usr_rahul_1002",
+      name: "Rahul Sharma",
+      email: "rahul.sharma@college.edu",
+      college: "Uttaranchal University",
+      department: "CSE",
+      year: 2
+    },
+    studentIdCardURL: "https://images.unsplash.com/photo-1544717305-2782549b5136?auto=format&fit=crop&w=400&q=80",
+    status: "approved",
+    submittedAt: new Date(Date.now() - 86400000).toISOString()
+  }
+];
+
+export const DEMO_FALLBACK_ANALYTICS = {
+  totalEmissionsSavedKg: 215.4,
+  totalSharedKilometers: 1260,
+  campusTrafficReductionPercent: 24,
+  activeVehiclesCount: 8,
+  popularCorridors: [
+    { corridor: "Premnagar Chowk ⇄ Uttaranchal University", sharePercent: 42 },
+    { corridor: "Suddhowala PG Hub ⇄ UIT / USCS Buildings", sharePercent: 35 },
+    { corridor: "Selaqui Institutional Hub ⇄ Campus Gate 1", sharePercent: 23 }
+  ]
+};
+
+export const DEMO_FALLBACK_HUBS = [
+  { _id: "hub_01", name: "UIT Building (Uttaranchal Institute of Technology)", code: "UU-UIT", coordinates: [77.9448, 30.3432], activeRidesCount: 4 },
+  { _id: "hub_02", name: "USCS Building (School of Computing Sciences)", code: "UU-USCS", coordinates: [77.9456, 30.3428], activeRidesCount: 3 },
+  { _id: "hub_03", name: "BBA Building (Uttaranchal Institute of Management)", code: "UU-BBA", coordinates: [77.9461, 30.3420], activeRidesCount: 3 },
+  { _id: "hub_04", name: "Central Academic Library & Law Block", code: "UU-LIB", coordinates: [77.9450, 30.3425], activeRidesCount: 2 },
+  { _id: "hub_05", name: "Campus Gate 1 (Main Entrance, Premnagar Road)", code: "UU-GATE1", coordinates: [77.9440, 30.3415], activeRidesCount: 5 }
+];
+
+export const DEMO_FALLBACK_AUDIT_LOGS = [
+  {
+    _id: "log_01",
+    action: "FARE_POLICY_UPDATE",
+    actor: "Dean of Student Affairs",
+    details: "Minimum price per seat standard verified at ₹10 per seat.",
+    timestamp: new Date().toISOString()
+  },
+  {
+    _id: "log_02",
+    action: "STUDENT_VERIFICATION",
+    actor: "Campus Registrar",
+    details: "Student identity credentials verified for 12 campus commuters.",
+    timestamp: new Date(Date.now() - 7200000).toISOString()
+  }
+];

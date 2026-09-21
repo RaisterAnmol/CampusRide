@@ -1,12 +1,27 @@
 import { io, Socket } from "socket.io-client";
-
-const SOCKET_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+ 
+const isLocalhost = typeof window !== "undefined" && window.location.hostname === "localhost";
+const SOCKET_URL = import.meta.env.VITE_API_URL || (isLocalhost ? "http://localhost:5000" : "");
 
 let socket: Socket | null = null;
 
 export function getSocket(): Socket {
   const token =
     localStorage.getItem("campusride_token") || localStorage.getItem("token");
+
+  // In standalone mode without a remote backend, return a safe dummy socket
+  if (!SOCKET_URL) {
+    return {
+      connected: false,
+      on: () => {},
+      off: () => {},
+      once: () => {},
+      emit: () => {},
+      disconnect: () => ({ connect: () => {} }),
+      connect: () => {}
+    } as any;
+  }
+
   if (!socket) {
     socket = io(SOCKET_URL, {
       autoConnect: true,

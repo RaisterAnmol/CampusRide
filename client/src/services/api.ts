@@ -1,6 +1,24 @@
-import { DEMO_FALLBACK_USERS, DEMO_FALLBACK_RIDES, DEMO_FALLBACK_OPERATIONS } from "./demoFallback";
+import {
+  DEMO_FALLBACK_USERS,
+  DEMO_FALLBACK_RIDES,
+  DEMO_FALLBACK_OPERATIONS,
+  DEMO_FALLBACK_INCIDENTS,
+  DEMO_FALLBACK_VERIFICATIONS,
+  DEMO_FALLBACK_ANALYTICS,
+  DEMO_FALLBACK_HUBS,
+  DEMO_FALLBACK_AUDIT_LOGS,
+} from "./demoFallback";
 
-const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:5000";
+const isStandaloneVercel =
+  typeof window !== "undefined" &&
+  window.location.hostname !== "localhost" &&
+  !import.meta.env.VITE_API_URL;
+
+const API_BASE =
+  import.meta.env.VITE_API_URL ||
+  (typeof window !== "undefined" && window.location.hostname === "localhost"
+    ? "http://localhost:5000"
+    : "");
 
 function getLocalDemoFallback<T>(endpoint: string, options: RequestInit): T | undefined {
   try {
@@ -63,9 +81,32 @@ function getLocalDemoFallback<T>(endpoint: string, options: RequestInit): T | un
       return (saved ? JSON.parse(saved) : DEMO_FALLBACK_OPERATIONS.pricingConfig) as T;
     }
 
+    if (path.includes("/emergency/incidents")) {
+      return DEMO_FALLBACK_INCIDENTS as T;
+    }
+
+    if (path.includes("/verification/queue")) {
+      return DEMO_FALLBACK_VERIFICATIONS as T;
+    }
+
+    if (path.includes("/analytics/mobility")) {
+      return DEMO_FALLBACK_ANALYTICS as T;
+    }
+
+    if (path.includes("/places/hubs")) {
+      return DEMO_FALLBACK_HUBS as T;
+    }
+
+    if (path.includes("/audit/logs")) {
+      return DEMO_FALLBACK_AUDIT_LOGS as T;
+    }
+
     if (path.includes("/requests")) {
       return [] as T;
     }
+
+    // Default safe empty array / object for any unknown endpoint
+    return [] as unknown as T;
   } catch (e) {
     console.warn("[DemoFallback] Error resolving fallback:", e);
   }
@@ -90,6 +131,12 @@ class ApiService {
 
     if (token) {
       headers["Authorization"] = `Bearer ${token}`;
+    }
+
+    // If on Vercel without a configured backend URL, serve local demo fallback directly without loopback attempt
+    if (isStandaloneVercel || !API_BASE) {
+      const fallback = getLocalDemoFallback<T>(endpoint, options);
+      if (fallback !== undefined) return fallback;
     }
 
     try {
