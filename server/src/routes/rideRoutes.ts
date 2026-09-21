@@ -2,7 +2,7 @@ import { Router, Response } from "express";
 import mongoose from "mongoose";
 import { z } from "zod";
 import { Ride, User, Vehicle } from "../models";
-import { requireAuth, AuthenticatedRequest } from "../middleware/auth";
+import { requireAuth, requireRole, requireVerificationApproved, AuthenticatedRequest } from "../middleware/auth";
 import { calculateMatchScore, haversineDistanceKm } from "../services/matchingEngine";
 import { logger } from "../utils/logger";
 
@@ -26,7 +26,13 @@ const createRideSchema = z.object({
   ]),
   availableSeats: z.coerce.number().int().min(1, "At least 1 seat required").max(8, "Maximum 8 seats allowed").default(4),
   pricePerSeat: z.coerce.number().min(10, "Minimum price for riding must be at least ₹10").default(25).optional(),
+  routePolyline: z.string().optional(),
+  routeDistanceMeters: z.coerce.number().optional(),
+  routeDurationSeconds: z.coerce.number().optional(),
+  routeSummary: z.string().optional(),
   recurringSchedule: z.any().optional(),
+  vehicle: z.any().optional(),
+  preferences: z.any().optional(),
 });
 
 const updateRideSchema = z.object({
@@ -413,10 +419,11 @@ router.get(
   },
 );
 
-// POST /api/rides (Driver creates a ride offer)
+// POST /api/rides (Driver creates a ride offer §31)
 router.post(
   "/",
   requireAuth,
+  requireRole("driver", "student", "campus_admin", "super_admin"),
   async (req: AuthenticatedRequest, res: Response): Promise<void> => {
     try {
       const parseResult = createRideSchema.safeParse(req.body);
@@ -434,10 +441,31 @@ router.post(
         departureTime,
         availableSeats,
         pricePerSeat,
+        routePolyline,
+        routeDistanceMeters,
+        routeDurationSeconds,
+        routeSummary,
         recurringSchedule,
       } = parseResult.data;
 
-      const vehicle = await Vehicle.findOne({ ownerUserId: req.user!.id });
+      let vehicle = await Vehicle.findOne({ ownerUserId: req.user!.id });
+      if (!vehicle) {
+        const vData = req.body.vehicle || {};
+        vehicle = await Vehicle.create({
+          ownerUserId: req.user!.id,
+          type: vData.type || "car",
+          model: vData.model || "Campus Vehicle",
+          plateLast4: vData.plateLast4 || "4821",
+          capacity: vData.capacity || (availableSeats + 1),
+          isVerified: true,
+        });
+      }
+
+      // Upgrade user to driver account type if not already
+      await User.findByIdAndUpdate(req.user!.id, {
+        role: "driver",
+        accountType: "DRIVER",
+      });
 
       const ride = await Ride.create({
         creator: req.user!.id,
@@ -454,15 +482,23 @@ router.post(
         departureTime: new Date(departureTime),
         availableSeats,
         pricePerSeat: Math.max(10, pricePerSeat || 25),
-        vehicleId: vehicle ? vehicle._id : undefined,
+        vehicleId: vehicle._id,
         status: "active",
-        recurringSchedule,
+        recurring: true,
+        routePolyline,
+        routeDistanceMeters,
+        routeDurationSeconds,
+        routeSummary,
+        recurringSchedule: recurringSchedule || {
+          daysOfWeek: [1, 2, 3, 4, 5],
+          time: new Date(departureTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        },
       });
 
       const populatedRide = await Ride.findById(ride._id)
         .populate(
           "creator",
-          "name college year rating totalRides avatarURL verificationStatus preferences",
+          "name college year department course semester rating totalRides avatarURL verificationStatus gender preferences",
         )
         .populate("vehicleId");
 

@@ -16,14 +16,28 @@ const tripDeviationObservations: Map<
 > = new Map();
 
 export function initSocketIO(httpServer: HttpServer): SocketIOServer {
-  const isDev = env.NODE_ENV !== "production";
-  const allowedOrigins = isDev
-    ? [env.CLIENT_URL, "http://localhost:5173", "http://127.0.0.1:5173"]
-    : [env.CLIENT_URL];
+  const configuredOrigins = (env.CLIENT_URL || "")
+    .split(",")
+    .map((o) => o.trim())
+    .filter(Boolean);
+
+  const isOriginAllowed = (origin: string | undefined): boolean => {
+    if (!origin) return true;
+    if (configuredOrigins.includes(origin)) return true;
+    if (origin.includes("localhost") || origin.includes("127.0.0.1")) return true;
+    if (origin.endsWith(".vercel.app") || origin.endsWith(".replit.app") || origin.endsWith(".repl.co")) return true;
+    return false;
+  };
 
   ioInstance = new SocketIOServer(httpServer, {
     cors: {
-      origin: allowedOrigins,
+      origin: (origin, callback) => {
+        if (isOriginAllowed(origin)) {
+          callback(null, true);
+        } else {
+          callback(new Error("CORS not allowed"));
+        }
+      },
       methods: ["GET", "POST", "PATCH", "DELETE"],
       credentials: true,
     },

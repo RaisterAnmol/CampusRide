@@ -9,6 +9,7 @@ import { ChatModal } from '../components/ChatModal';
 import { QRCodeDisplay } from '../components/QRCodeDisplay';
 import { QRScannerModal } from '../components/QRScannerModal';
 import { BoardingPassModal } from '../components/BoardingPassModal';
+import { LiveTripMap } from '../components/map/LiveTripMap';
 import {
   Key,
   CheckCircle2,
@@ -415,13 +416,36 @@ export const TripTrackingPage: React.FC = () => {
           <div className="flex items-center gap-2">
             <Radio className="w-4 h-4 text-[#18A66A] animate-pulse" />
             <span className="text-xs font-mono font-bold text-[#18201D] uppercase">
-              Live Transit Telemetry
+              Live Transit Telemetry & GPS Navigation
             </span>
           </div>
           <span className="text-[11px] font-mono text-[#646A67]">
-            30-DAY TTL RECORDED
+            ENCRYPTED TELEMETRY LINK
           </span>
         </div>
+
+        {/* Leaflet Live Map */}
+        {ride?.origin && ride?.destination && (
+          <LiveTripMap
+            tripId={trip._id}
+            isDriver={isDriver}
+            origin={ride.origin}
+            destination={ride.destination}
+            initialRoutePolyline={ride.routePolyline ? JSON.parse(ride.routePolyline) : undefined}
+            currentLocation={liveLocation}
+            onDeviationChange={(dev) => {
+              if (dev && dev.isDeviated) {
+                setCorridorDeviation({
+                  severity: 'medium',
+                  distanceMeters: dev.distanceMeters,
+                  message: `Vehicle has deviated ${dev.distanceMeters}m from the planned road corridor.`,
+                });
+              } else {
+                setCorridorDeviation(null);
+              }
+            }}
+          />
+        )}
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 bg-[#F7F5F0] p-4 rounded-2xl border border-[#DDE1DE] text-xs">
           <div>

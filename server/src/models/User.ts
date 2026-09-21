@@ -21,7 +21,36 @@ export interface IReliabilityStats {
   noShows: number;
 }
 
-export type UserRole = "student" | "moderator" | "campus_admin" | "super_admin";
+export type UserRole = "student" | "driver" | "moderator" | "campus_admin" | "super_admin";
+export type AccountType = "PASSENGER" | "WOMEN_PASSENGER" | "DRIVER" | "ADMIN";
+export type FaceEnrollmentStatus = "NOT_STARTED" | "PENDING" | "ENROLLED" | "DISABLED";
+export type VerificationStatus =
+  | "unverified"
+  | "pending"
+  | "verified"
+  | "rejected"
+  | "PENDING_VERIFICATION"
+  | "APPROVED"
+  | "REJECTED"
+  | "SUSPENDED";
+
+export function isVerificationApproved(user: any): boolean {
+  if (!user) return false;
+  const s = String(user.verificationStatus || "").toUpperCase();
+  return s === "VERIFIED" || s === "APPROVED";
+}
+
+export function isPendingVerification(user: any): boolean {
+  if (!user) return false;
+  const s = String(user.verificationStatus || "").toUpperCase();
+  return s === "PENDING" || s === "PENDING_VERIFICATION";
+}
+
+export function isVerificationRejected(user: any): boolean {
+  if (!user) return false;
+  const s = String(user.verificationStatus || "").toUpperCase();
+  return s === "REJECTED";
+}
 
 export interface IUser extends Document {
   _id: mongoose.Types.ObjectId;
@@ -29,6 +58,7 @@ export interface IUser extends Document {
   email: string;
   passwordHash?: string;
   role: UserRole;
+  accountType: AccountType;
   college: string;
   year: number;
   department?: string;
@@ -38,7 +68,13 @@ export interface IUser extends Document {
   campusId?: mongoose.Types.ObjectId;
   phone?: string;
   avatarURL?: string;
-  verificationStatus: "unverified" | "pending" | "verified" | "rejected";
+  verificationStatus: VerificationStatus;
+  faceEnrollmentStatus: FaceEnrollmentStatus;
+  faceVerificationEnabled: boolean;
+  faceEmbedding?: number[];
+  faceRetryCount?: number;
+  passwordResetTokenHash?: string;
+  passwordResetExpires?: Date;
   isEmailVerified: boolean;
   emailVerificationTokenHash?: string;
   emailVerificationExpires?: Date;
@@ -73,8 +109,14 @@ const UserSchema = new Schema<IUser>(
     passwordHash: { type: String, required: true },
     role: {
       type: String,
-      enum: ["student", "moderator", "campus_admin", "super_admin"],
+      enum: ["student", "driver", "moderator", "campus_admin", "super_admin"],
       default: "student",
+      index: true,
+    },
+    accountType: {
+      type: String,
+      enum: ["PASSENGER", "WOMEN_PASSENGER", "DRIVER", "ADMIN"],
+      default: "PASSENGER",
       index: true,
     },
     college: { type: String, required: true, trim: true, index: true },
@@ -88,10 +130,30 @@ const UserSchema = new Schema<IUser>(
     avatarURL: { type: String, default: "" },
     verificationStatus: {
       type: String,
-      enum: ["unverified", "pending", "verified", "rejected"],
+      enum: [
+        "unverified",
+        "pending",
+        "verified",
+        "rejected",
+        "PENDING_VERIFICATION",
+        "APPROVED",
+        "REJECTED",
+        "SUSPENDED",
+      ],
       default: "unverified",
       index: true,
     },
+    faceEnrollmentStatus: {
+      type: String,
+      enum: ["NOT_STARTED", "PENDING", "ENROLLED", "DISABLED"],
+      default: "NOT_STARTED",
+      index: true,
+    },
+    faceVerificationEnabled: { type: Boolean, default: false },
+    faceEmbedding: { type: [Number], select: false },
+    faceRetryCount: { type: Number, default: 0 },
+    passwordResetTokenHash: { type: String, select: false },
+    passwordResetExpires: { type: Date, select: false },
     isEmailVerified: { type: Boolean, default: false },
     emailVerificationTokenHash: { type: String, select: false },
     emailVerificationExpires: { type: Date, select: false },
@@ -146,6 +208,9 @@ const UserSchema = new Schema<IUser>(
         delete ret.phoneOtpSalt;
         delete ret.phoneOtpExpires;
         delete ret.phoneOtpAttempts;
+        delete ret.faceEmbedding;
+        delete ret.passwordResetTokenHash;
+        delete ret.passwordResetExpires;
         return ret;
       },
     },

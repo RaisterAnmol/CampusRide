@@ -12,6 +12,7 @@
     "seed": "npm --prefix server run seed",
     "build": "npm --prefix client run build",
     "build:client": "npm --prefix client run build",
-    "build:server": "npm --prefix server run build"
+    "build:server": "npm --prefix server run build",
+    "start": "npm --prefix server start"
   }
 }

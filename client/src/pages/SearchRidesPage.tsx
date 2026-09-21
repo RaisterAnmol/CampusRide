@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../services/api';
 import { IRide } from '../types';
@@ -117,6 +117,35 @@ export const SearchRidesPage: React.FC = () => {
   const [requestSuccess, setRequestSuccess] = useState<string | null>(null);
   const [requestError, setRequestError] = useState<string | null>(null);
 
+  // Track seat requests to immediately and persistently display "Request Sent"
+  const [requestedRideIds, setRequestedRideIds] = useState<Set<string>>(() => {
+    try {
+      const local = JSON.parse(localStorage.getItem("campusride_local_requests") || "[]");
+      return new Set(local.map((r: any) => String(r.rideId)));
+    } catch {
+      return new Set();
+    }
+  });
+
+  // Sync requested ride IDs from API + local storage
+  useEffect(() => {
+    async function syncRequests() {
+      try {
+        const reqs = await api.getRequests("passenger");
+        const local = JSON.parse(localStorage.getItem("campusride_local_requests") || "[]");
+        const set = new Set<string>();
+        (reqs || []).forEach((r: any) => {
+          if (r.rideId) set.add(String(typeof r.rideId === 'object' ? r.rideId._id || r.rideId.id : r.rideId));
+        });
+        (local || []).forEach((r: any) => {
+          if (r.rideId) set.add(String(r.rideId));
+        });
+        setRequestedRideIds(set);
+      } catch {}
+    }
+    syncRequests();
+  }, [user]);
+
   // Sync preference if user switches to Priya
   useEffect(() => {
     if (user?.preferences?.womenOnlyDriver !== undefined) {
@@ -225,33 +254,37 @@ export const SearchRidesPage: React.FC = () => {
     }
   };
 
-  // Strict Persona Redirection: Drivers ONLY post rides, Admins ONLY dashboard
+  // Run initial search when route or filter changes
   useEffect(() => {
-    if (activePersona === 'driver') {
-      navigate('/post', { replace: true });
-    } else if (activePersona === 'admin') {
-      navigate('/admin', { replace: true });
-    }
-  }, [activePersona, navigate]);
-
-  // Run initial search when user, route, or filter changes (PASSENGERS ONLY)
-  useEffect(() => {
-    if (activePersona !== 'passenger') {
-      return;
-    }
-    if (user) {
-      handleSearch();
-    } else {
-      switchDemoUser('rahul').catch(() => {});
-    }
-  }, [user, originIndex, destIndex, womenOnlyDriver, activePersona]);
+    handleSearch();
+  }, [user, originIndex, destIndex, womenOnlyDriver]);
 
   const handleRequestRide = async (rideId: string) => {
+    if (!user) {
+      navigate('/login?redirect=/search');
+      return;
+    }
     setRequestingId(rideId);
     setRequestSuccess(null);
     setRequestError(null);
     try {
       await api.requestRide(rideId);
+      // Immediately reflect requested state in UI
+      setRequestedRideIds((prev) => {
+        const next = new Set(prev);
+        next.add(rideId);
+        return next;
+      });
+      // Persist in localStorage for instant offline & standalone Vercel persistence
+      const local = JSON.parse(localStorage.getItem("campusride_local_requests") || "[]");
+      const newReq = {
+        _id: "req_" + Date.now(),
+        rideId,
+        passengerId: user,
+        status: "pending",
+        createdAt: new Date().toISOString(),
+      };
+      localStorage.setItem("campusride_local_requests", JSON.stringify([newReq, ...local]));
       setRequestSuccess('Seat requested! Driver has been notified in real time.');
     } catch (err: any) {
       setRequestError(err.message || 'Failed to request seat');
@@ -260,120 +293,48 @@ export const SearchRidesPage: React.FC = () => {
     }
   };
 
-  // Driver Persona Guard: Driver only posts rides, not search
-  if (activePersona === 'driver') {
-    return (
-      <div className="min-h-[75vh] flex items-center justify-center px-4 py-12">
-        <div className="max-w-md w-full bg-white rounded-3xl border border-slate-200 shadow-xl p-8 text-center animate-in fade-in zoom-in-95 duration-200">
-          <div className="w-16 h-16 rounded-2xl bg-emerald-50 text-[#143D32] flex items-center justify-center mx-auto mb-4 border border-emerald-100 shadow-inner">
-            <Car className="w-8 h-8 text-[#143D32]" />
-          </div>
-          <span className="inline-block px-3 py-1 rounded-full text-[11px] font-mono font-bold bg-emerald-100 text-emerald-800 uppercase tracking-wider border border-emerald-300">
-            Driver Mode Active
-          </span>
-          <h2 className="text-2xl font-bold text-slate-900 mt-3 tracking-tight">
-            Drivers Post Rides
-          </h2>
-          <p className="text-slate-600 mt-2 text-sm leading-relaxed">
-            You are logged in as <strong>{user?.name || 'Aditya Kumar'}</strong> (Verified Driver). As a driver, you offer empty seats along your route. Searching or booking passenger seats is disabled in driver mode.
-          </p>
-          <div className="mt-6 space-y-2.5">
-            <button
-              onClick={() => navigate('/post')}
-              className="w-full py-3 px-4 rounded-xl bg-[#143D32] text-white font-semibold text-sm hover:bg-[#0f2e26] transition-all flex items-center justify-center gap-2 shadow-sm cursor-pointer"
-            >
-              <Car className="w-4 h-4" />
-              <span>Post a Campus Ride</span>
-            </button>
-            <button
-              onClick={async () => {
-                await switchDemoUser('rahul');
-                navigate('/search');
-              }}
-              className="w-full py-2.5 px-4 rounded-xl border border-slate-200 text-slate-700 font-medium text-xs hover:bg-slate-50 transition-colors flex items-center justify-center gap-2 cursor-pointer"
-            >
-              <span>Switch to Passenger Mode (Rahul Sharma)</span>
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // Admin Persona Guard: Admin oversees operations, not search
-  if (activePersona === 'admin') {
-    return (
-      <div className="min-h-[75vh] flex items-center justify-center px-4 py-12">
-        <div className="max-w-md w-full bg-white rounded-3xl border border-slate-200 shadow-xl p-8 text-center animate-in fade-in zoom-in-95 duration-200">
-          <div className="w-16 h-16 rounded-2xl bg-amber-50 text-amber-700 flex items-center justify-center mx-auto mb-4 border border-amber-100 shadow-inner">
-            <ShieldCheck className="w-8 h-8 text-amber-600" />
-          </div>
-          <span className="inline-block px-3 py-1 rounded-full text-[11px] font-mono font-bold bg-amber-100 text-amber-800 uppercase tracking-wider border border-amber-300">
-            Admin Mode Active
-          </span>
-          <h2 className="text-2xl font-bold text-slate-900 mt-3 tracking-tight">
-            Security & Operations Center
-          </h2>
-          <p className="text-slate-600 mt-2 text-sm leading-relaxed">
-            You are logged in as <strong>Campus Administrator</strong>. Administrators oversee live rides, revenue, pricing benchmarks, and safety audits from the Operations Dashboard.
-          </p>
-          <div className="mt-6 space-y-2.5">
-            <button
-              onClick={() => navigate('/admin')}
-              className="w-full py-3 px-4 rounded-xl bg-[#143D32] text-white font-semibold text-sm hover:bg-[#0f2e26] transition-all flex items-center justify-center gap-2 shadow-sm cursor-pointer"
-            >
-              <ShieldCheck className="w-4 h-4" />
-              <span>Open Admin Dashboard</span>
-            </button>
-            <button
-              onClick={async () => {
-                await switchDemoUser('rahul');
-                navigate('/search');
-              }}
-              className="w-full py-2.5 px-4 rounded-xl border border-slate-200 text-slate-700 font-medium text-xs hover:bg-slate-50 transition-colors flex items-center justify-center gap-2 cursor-pointer"
-            >
-              <span>Switch to Passenger Mode (Rahul Sharma)</span>
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  const isDriver = user?.role === 'driver' || user?.accountType === 'DRIVER';
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
-      {/* Guest Persona Switcher Banner if not logged in */}
-      {!user && (
-        <div className="bg-amber-50 border border-amber-200 rounded-3xl p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm">
-          <div className="flex items-center gap-3 text-amber-900 text-sm">
-            <ShieldCheck className="w-6 h-6 text-amber-600 shrink-0" />
+      {/* Driver notice banner */}
+      {isDriver && (
+        <div className="bg-slate-900 text-white rounded-3xl p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-sm">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center">
+              <Car className="w-5 h-5" />
+            </div>
             <div>
-              <p className="font-bold">Select a Verified Student Persona to Search Rides</p>
-              <p className="text-xs text-amber-700">CampusRide protects student safety with verified .edu authentication:</p>
+              <p className="font-bold text-sm">Offering a ride as a verified driver?</p>
+              <p className="text-xs text-slate-300">Publish your daily commute route and let classmates book open seats along your way.</p>
             </div>
           </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <button
-              type="button"
-              onClick={() => switchDemoUser('rahul')}
-              className="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-all shadow-sm"
+          <Link
+            to="/post"
+            className="px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-bold transition-all text-center shrink-0 cursor-pointer"
+          >
+            Post a Ride Now
+          </Link>
+        </div>
+      )}
+
+      {/* Guest Sign-In Notice if not logged in */}
+      {!user && (
+        <div className="bg-emerald-50/80 border border-emerald-200 rounded-3xl p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xs">
+          <div className="flex items-center gap-3 text-emerald-950 text-sm">
+            <ShieldCheck className="w-6 h-6 text-emerald-700 shrink-0" />
+            <div>
+              <p className="font-bold">Browsing Campus Commutes</p>
+              <p className="text-xs text-emerald-800">You can browse verified student routes freely. Sign in to request seats or verify your college ID.</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <Link
+              to="/login?redirect=/search"
+              className="px-4 py-2 rounded-xl bg-[#143D32] hover:bg-[#0f2e26] text-white text-xs font-bold transition-all shadow-xs cursor-pointer"
             >
-              Rahul (Passenger)
-            </button>
-            <button
-              type="button"
-              onClick={() => switchDemoUser('aditya')}
-              className="px-3.5 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-all shadow-sm"
-            >
-              Aditya (Driver)
-            </button>
-            <button
-              type="button"
-              onClick={() => switchDemoUser('priya')}
-              className="px-3.5 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold transition-all shadow-sm"
-            >
-              Priya (Women-Only)
-            </button>
+              Sign In / Register
+            </Link>
           </div>
         </div>
       )}
@@ -1003,14 +964,21 @@ export const SearchRidesPage: React.FC = () => {
                       View Details
                     </button>
                     {!isCreator && (
-                      <button
-                        type="button"
-                        disabled={requestingId === ride._id || ride.availableSeats <= 0}
-                        onClick={() => handleRequestRide(ride._id)}
-                        className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-xs font-bold text-white shadow-sm transition-colors flex items-center gap-1.5 cursor-pointer"
-                      >
-                        {requestingId === ride._id ? 'Requesting...' : 'Request Seat'}
-                      </button>
+                      requestedRideIds.has(ride._id) ? (
+                        <span className="px-3.5 py-2 rounded-xl bg-amber-50 text-amber-800 border border-amber-300 text-xs font-bold flex items-center gap-1.5 shadow-xs">
+                          <CheckCircle2 className="w-3.5 h-3.5 text-amber-600" />
+                          <span>Request Sent</span>
+                        </span>
+                      ) : (
+                        <button
+                          type="button"
+                          disabled={requestingId === ride._id || ride.availableSeats <= 0}
+                          onClick={() => handleRequestRide(ride._id)}
+                          className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-xs font-bold text-white shadow-sm transition-colors flex items-center gap-1.5 cursor-pointer"
+                        >
+                          {requestingId === ride._id ? 'Requesting...' : 'Request Seat'}
+                        </button>
+                      )
                     )}
                   </div>
                 </div>

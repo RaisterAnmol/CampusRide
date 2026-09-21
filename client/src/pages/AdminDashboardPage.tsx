@@ -4,6 +4,7 @@ import { api } from "../services/api";
 import { getSocket, joinSecurityHub } from "../services/socket";
 import { useAuth } from "../context/AuthContext";
 import { IMobilityAnalytics } from "../types";
+import { VerificationReviewModal } from "../components/verification/VerificationReviewModal";
 import {
   ShieldAlert,
   UserCheck,
@@ -36,23 +37,23 @@ import {
   Wallet,
   Activity,
   TrendingUp,
+  Eye,
 } from "lucide-react";
 
 type AdminTab = "overview" | "pricing" | "soc" | "verifications" | "analytics" | "hubs" | "audit";
 
 export const AdminDashboardPage: React.FC = () => {
-  const { activePersona } = useAuth();
+  const { user } = useAuth();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<AdminTab>("overview");
+  const [reviewModalRequest, setReviewModalRequest] = useState<any | null>(null);
 
-  // Strict Persona Redirection: Drivers only post rides, Passengers only search rides
+  // Authoritative Server Role Authorization: Only verified admins or moderators
   useEffect(() => {
-    if (activePersona === 'driver') {
-      navigate('/post', { replace: true });
-    } else if (activePersona === 'passenger') {
-      navigate('/search', { replace: true });
+    if (user && user.role !== 'super_admin' && user.role !== 'campus_admin' && user.role !== 'moderator') {
+      navigate('/dashboard', { replace: true });
     }
-  }, [activePersona, navigate]);
+  }, [user, navigate]);
 
   // Real-Time Operations Telemetry State
   const [opsData, setOpsData] = useState<{
@@ -307,7 +308,21 @@ export const AdminDashboardPage: React.FC = () => {
     { hour: "18:00", rides: 8 },
   ];
 
-  const allOngoingRides = opsData?.ongoingRides || [];
+  // College Scoping: Campus Administrators only see rides & operations from their own college
+  const adminCollege = user?.college;
+  const isSuperAdmin = user?.role === "super_admin";
+  const [selectedCollegeScope, setSelectedCollegeScope] = useState<string>(() => adminCollege || "Uttaranchal University");
+
+  // Strictly enforce admin's college:
+  const activeCollegeScope = adminCollege || selectedCollegeScope || "Uttaranchal University";
+
+  const allOngoingRides = (opsData?.ongoingRides || []).filter((ride: any) => {
+    const target = (activeCollegeScope || "").toLowerCase().trim();
+    if (!target) return true;
+    const driverCollege = (ride.driver?.college || "").toLowerCase().trim();
+    return driverCollege.includes(target) || target.includes(driverCollege);
+  });
+
   const filteredOngoingRides = allOngoingRides
     .filter((ride) => {
       if (ongoingFilter === "live") return ride.isLiveNow || ride.status === "in_progress";
@@ -328,6 +343,14 @@ export const AdminDashboardPage: React.FC = () => {
         passengersStr.includes(q)
       );
     });
+
+  const filteredVerifications = verifications.filter((req: any) => {
+    if (activeCollegeScope === "ALL" && isSuperAdmin) return true;
+    const target = (activeCollegeScope || "").toLowerCase().trim();
+    if (!target) return true;
+    const col = (req.college || req.userId?.college || "").toLowerCase().trim();
+    return col.includes(target) || target.includes(col);
+  });
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
@@ -360,6 +383,29 @@ export const AdminDashboardPage: React.FC = () => {
           <p className="text-sm text-[#646A67] mt-1">
             Real-time emergency monitoring, student identity gatekeeper, and campus mobility intelligence.
           </p>
+
+          {/* Institutional Campus Scoping Indicator */}
+          <div className="mt-3 flex flex-wrap items-center gap-2.5">
+            <span className="px-3 py-1 bg-emerald-50 text-emerald-800 border border-emerald-300 rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-xs">
+              <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+              <span>Campus Scoped: {activeCollegeScope === 'ALL' ? 'All Campuses (Super Admin)' : activeCollegeScope}</span>
+            </span>
+
+            {isSuperAdmin && (
+              <select
+                value={selectedCollegeScope}
+                onChange={(e) => setSelectedCollegeScope(e.target.value)}
+                className="text-xs p-1.5 rounded-xl border border-slate-300 bg-white font-semibold text-slate-800 focus:outline-none focus:ring-1 focus:ring-emerald-500 cursor-pointer"
+              >
+                <option value="Uttaranchal University">Uttaranchal University</option>
+                <option value="Graphic Era University">Graphic Era University</option>
+                <option value="University of Petroleum and Energy Studies">UPES</option>
+                <option value="DIT University">DIT University</option>
+                <option value="Delhi Technological University">Delhi Technological University</option>
+                <option value="ALL">All Campuses (Global Super Admin View)</option>
+              </select>
+            )}
+          </div>
         </div>
 
         <div className="flex items-center gap-3">
@@ -1260,7 +1306,7 @@ export const AdminDashboardPage: React.FC = () => {
               ))}
             </div>
             <div className="text-xs font-mono text-[#646A67]">
-              {verifications.length} submissions in view
+              {filteredVerifications.length} submissions in view
             </div>
           </div>
 
@@ -1269,17 +1315,17 @@ export const AdminDashboardPage: React.FC = () => {
               <div className="w-6 h-6 border-2 border-[#143D32] border-t-transparent rounded-full animate-spin mx-auto mb-3" />
               FETCHING ID CARD VERIFICATION QUEUE...
             </div>
-          ) : verifications.length === 0 ? (
+          ) : filteredVerifications.length === 0 ? (
             <div className="bg-white p-12 rounded-2xl border border-[#DDE1DE] text-center">
               <CheckCircle2 className="w-12 h-12 text-[#18A66A] mx-auto mb-3" />
               <h3 className="text-base font-bold text-[#18201D]">Queue Clear</h3>
               <p className="text-xs text-[#646A67] mt-1 max-w-md mx-auto">
-                No student verification requests pending review for this filter.
+                No student verification requests pending review for this campus filter.
               </p>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {verifications.map((req) => (
+              {filteredVerifications.map((req) => (
                 <div
                   key={req._id}
                   className="bg-white rounded-2xl border border-[#DDE1DE] p-6 shadow-xs flex flex-col justify-between"
@@ -1338,73 +1384,55 @@ export const AdminDashboardPage: React.FC = () => {
                         </span>
                       </div>
 
-                      {/* Mock ID Card Visual Badge */}
+                      {/* Mock ID Card Visual Badge & Modal Trigger */}
                       <div className="mt-3 p-3 bg-[#F7F5F0] rounded-xl border border-[#DDE1DE] flex items-center justify-between">
                         <div className="flex items-center gap-2">
                           <FileText className="w-4 h-4 text-[#143D32]" />
-                          <span className="font-mono text-[11px] text-[#18201D] truncate max-w-[200px]">
+                          <span className="font-mono text-[11px] text-[#18201D] truncate max-w-[170px]">
                             {req.documentStorageKey || "student_id_doc.png"}
                           </span>
                         </div>
-                        <span className="text-[10px] font-mono text-[#18A66A] font-semibold">
-                          ENCRYPTED AT REST
-                        </span>
+                        <button
+                          type="button"
+                          onClick={() => setReviewModalRequest(req)}
+                          className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-[10px] font-bold tracking-wider uppercase transition-colors flex items-center gap-1 shadow-xs"
+                        >
+                          <Eye className="w-3 h-3" />
+                          <span>Inspect</span>
+                        </button>
                       </div>
                     </div>
                   </div>
 
-                  {req.status === "pending" && (
-                    <div className="pt-4 border-t border-[#DDE1DE] space-y-3">
-                      {rejectingId === req._id ? (
-                        <div className="space-y-2">
-                          <input
-                            type="text"
-                            placeholder="Rejection reason (e.g. Name mismatch on ID card)"
-                            value={rejectionReason}
-                            onChange={(e) => setRejectionReason(e.target.value)}
-                            className="w-full text-xs p-2 rounded-lg border border-[#DDE1DE] bg-white focus:outline-none"
-                          />
-                          <div className="flex items-center gap-2 justify-end">
-                            <button
-                              onClick={() => setRejectingId(null)}
-                              className="px-2.5 py-1 text-xs font-mono bg-white border border-[#DDE1DE] rounded"
-                            >
-                              Cancel
-                            </button>
-                            <button
-                              onClick={() => handleReviewVerification(req._id, "rejected", rejectionReason)}
-                              className="px-2.5 py-1 text-xs font-mono font-semibold bg-[#D9383A] text-white rounded"
-                            >
-                              Confirm Rejection
-                            </button>
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="flex items-center gap-2">
-                          <button
-                            onClick={() => handleReviewVerification(req._id, "approved")}
-                            className="flex-1 py-2 bg-[#143D32] hover:bg-[#0E2C24] text-white rounded-xl text-xs font-mono font-semibold transition-colors flex items-center justify-center gap-1.5"
-                          >
-                            <CheckCircle2 className="w-3.5 h-3.5" />
-                            <span>APPROVE VERIFICATION</span>
-                          </button>
-                          <button
-                            onClick={() => {
-                              setRejectingId(req._id);
-                              setRejectionReason("");
-                            }}
-                            className="px-3 py-2 bg-white border border-[#DDE1DE] hover:bg-red-50 text-[#D9383A] rounded-xl text-xs font-mono font-semibold transition-colors"
-                          >
-                            REJECT
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  )}
+                  <div className="pt-4 border-t border-[#DDE1DE] space-y-3">
+                    <button
+                      type="button"
+                      onClick={() => setReviewModalRequest(req)}
+                      className="w-full py-2 bg-[#143D32] hover:bg-[#0E2C24] text-white rounded-xl text-xs font-mono font-semibold transition-colors flex items-center justify-center gap-2 shadow-xs"
+                    >
+                      <Eye className="w-3.5 h-3.5" />
+                      <span>OPEN FULL VERIFICATION INSPECTOR</span>
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>
           )}
+
+          {/* Dedicated Verification Review Modal with Live Document Previews */}
+          <VerificationReviewModal
+            isOpen={!!reviewModalRequest}
+            request={reviewModalRequest}
+            onClose={() => setReviewModalRequest(null)}
+            onApprove={async (id) => {
+              await api.approveVerification(id);
+              await loadVerifications();
+            }}
+            onReject={async (id, reason) => {
+              await api.rejectVerification(id, reason);
+              await loadVerifications();
+            }}
+          />
         </div>
       )}
 

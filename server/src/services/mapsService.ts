@@ -11,12 +11,30 @@ export interface LatLng {
   lng: number;
 }
 
+export interface RouteAlternative {
+  summary: string;
+  distanceMeters: number;
+  durationSeconds: number;
+  encodedPolyline: string;
+  decodedPath: Array<[number, number]>;
+}
+
+export interface RouteStep {
+  instruction: string;
+  distanceMeters: number;
+  durationSeconds: number;
+}
+
 export interface RouteResult {
   mode: "LIVE" | "MOCK_DEV";
+  provider: "OSRM" | "GOOGLE" | "MOCK";
+  calculatedAt: string;
   distanceMeters: number;
   durationSeconds: number;
   encodedPolyline: string;
   decodedPath: Array<[number, number]>; // [lat, lng]
+  alternatives: RouteAlternative[];
+  steps?: RouteStep[];
   warnings?: string[];
 }
 
@@ -74,15 +92,38 @@ export class MapsService {
 
         if (response.ok) {
           const data: any = await response.json();
-          const suggestions = (data.suggestions || []).map((s: any) => {
-            const pred = s.placePrediction;
-            return {
-              placeId: pred.placeId,
-              name: pred.structuredFormat?.mainText?.text || pred.text?.text,
-              formattedAddress: pred.text?.text || "",
-              location: { lat: 28.7501, lng: 77.1177 }, // Default campus focus
-            };
-          });
+          // For each suggestion, fetch details to get accurate lat/lng rather than campus default
+          const suggestions = await Promise.all(
+            (data.suggestions || []).slice(0, 5).map(async (s: any) => {
+              const pred = s.placePrediction;
+              const placeId = pred.placeId;
+              let loc: LatLng = { lat: 30.3415, lng: 77.944 };
+              try {
+                const detailRes = await fetch(
+                  `https://places.googleapis.com/v1/places/${placeId}?fields=location,displayName,formattedAddress`,
+                  {
+                    headers: {
+                      "Content-Type": "application/json",
+                      "X-Goog-Api-Key": MapsService.apiKey!,
+                    },
+                  },
+                );
+                if (detailRes.ok) {
+                  const detail: any = await detailRes.json();
+                  if (detail.location) {
+                    loc = { lat: detail.location.latitude, lng: detail.location.longitude };
+                  }
+                }
+              } catch (_) {}
+
+              return {
+                placeId,
+                name: pred.structuredFormat?.mainText?.text || pred.text?.text,
+                formattedAddress: pred.text?.text || "",
+                location: loc,
+              };
+            }),
+          );
           return { mode: "LIVE", places: suggestions };
         }
       } catch (err) {
@@ -93,7 +134,7 @@ export class MapsService {
     // 2. Free OpenStreetMap (Nominatim) - 100% Free, no credit card/billing required
     if (this.isFreeLiveMode()) {
       try {
-        const osmUrl = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=5`;
+        const osmUrl = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=6`;
         const response = await fetch(osmUrl, {
           headers: {
             "User-Agent": "CampusRide-StudentCarpool/1.0",
@@ -132,7 +173,7 @@ export class MapsService {
 
     return {
       mode: "MOCK_DEV",
-      places: (matches.length > 0 ? matches : MOCK_PLACES.slice(0, 3)).map(
+      places: (matches.length > 0 ? matches : MOCK_PLACES.slice(0, 5)).map(
         (p) => ({
           placeId: p.placeId,
           name: p.name,
@@ -144,13 +185,15 @@ export class MapsService {
   }
 
   /**
-   * Compute Road Route with Routes API v2
+   * Compute Road Route with Routes API v2, OSRM, or deterministic fixtures
    */
   public static async computeRoadRoute(
     origin: LatLng,
     destination: LatLng,
     intermediates: LatLng[] = [],
   ): Promise<RouteResult> {
+    const calculatedAt = new Date().toISOString();
+
     // 1. Google Routes API (if API key configured and mode is 'live')
     if (this.isGoogleLiveMode()) {
       try {
@@ -168,6 +211,7 @@ export class MapsService {
           },
           travelMode: "DRIVE",
           routingPreference: "TRAFFIC_AWARE",
+          computeAlternativeRoutes: true,
         };
 
         if (intermediates.length > 0) {
@@ -182,7 +226,7 @@ export class MapsService {
             "Content-Type": "application/json",
             "X-Goog-Api-Key": this.apiKey!,
             "X-Goog-FieldMask":
-              "routes.distanceMeters,routes.duration,routes.polyline.encodedPolyline",
+              "routes.distanceMeters,routes.duration,routes.polyline.encodedPolyline,routes.description",
           },
           body: JSON.stringify(body),
         });
@@ -190,18 +234,30 @@ export class MapsService {
         if (response.ok) {
           const data: any = await response.json();
           if (data.routes && data.routes.length > 0) {
-            const r = data.routes[0];
-            const polyline = r.polyline?.encodedPolyline || "";
+            const primary = data.routes[0];
+            const polyline = primary.polyline?.encodedPolyline || "";
             const durationSec = parseInt(
-              r.duration?.replace("s", "") || "600",
+              primary.duration?.replace("s", "") || "600",
               10,
             );
+
+            const alternatives: RouteAlternative[] = data.routes.slice(1).map((r: any, idx: number) => ({
+              summary: r.description || `Alternative Route ${idx + 1}`,
+              distanceMeters: r.distanceMeters || 1000,
+              durationSeconds: parseInt(r.duration?.replace("s", "") || "600", 10),
+              encodedPolyline: r.polyline?.encodedPolyline || "",
+              decodedPath: MapsService.decodePolyline(r.polyline?.encodedPolyline || ""),
+            }));
+
             return {
               mode: "LIVE",
-              distanceMeters: r.distanceMeters || 1000,
+              provider: "GOOGLE",
+              calculatedAt,
+              distanceMeters: primary.distanceMeters || 1000,
               durationSeconds: durationSec,
               encodedPolyline: polyline,
               decodedPath: this.decodePolyline(polyline),
+              alternatives,
             };
           }
         }
@@ -221,7 +277,7 @@ export class MapsService {
           ...intermediates.map((i) => `${i.lng},${i.lat}`),
           `${destination.lng},${destination.lat}`,
         ].join(";");
-        const osrmUrl = `https://router.project-osrm.org/route/v1/driving/${coords}?overview=full&geometries=polyline`;
+        const osrmUrl = `https://router.project-osrm.org/route/v1/driving/${coords}?overview=full&geometries=polyline&alternatives=true&steps=true`;
         const response = await fetch(osrmUrl, {
           headers: {
             "User-Agent": "CampusRide-StudentCarpool/1.0",
@@ -232,37 +288,82 @@ export class MapsService {
         if (response.ok) {
           const data: any = await response.json();
           if (data.routes && data.routes.length > 0) {
-            const route = data.routes[0];
-            const polyline = route.geometry;
+            const primary = data.routes[0];
+            const polyline = primary.geometry;
+            const primarySteps: RouteStep[] = (primary.legs || []).flatMap((leg: any) =>
+              (leg.steps || []).map((s: any) => ({
+                instruction: `${s.maneuver?.type || "proceed"}${s.maneuver?.modifier ? ` ${s.maneuver.modifier}` : ""}${s.name ? ` on ${s.name}` : ""}`,
+                distanceMeters: Math.round(s.distance || 0),
+                durationSeconds: Math.round(s.duration || 0),
+              })),
+            );
+
+            const alternatives: RouteAlternative[] = data.routes.slice(1).map((alt: any, idx: number) => ({
+              summary: alt.legs?.[0]?.summary || `Alternative via Route ${idx + 1}`,
+              distanceMeters: Math.round(alt.distance),
+              durationSeconds: Math.round(alt.duration),
+              encodedPolyline: alt.geometry,
+              decodedPath: MapsService.decodePolyline(alt.geometry),
+            }));
+
             return {
               mode: "LIVE",
-              distanceMeters: Math.round(route.distance),
-              durationSeconds: Math.round(route.duration),
+              provider: "OSRM",
+              calculatedAt,
+              distanceMeters: Math.round(primary.distance),
+              durationSeconds: Math.round(primary.duration),
               encodedPolyline: polyline,
               decodedPath: this.decodePolyline(polyline),
+              alternatives,
+              steps: primarySteps,
             };
           }
         }
       } catch (err) {
         logger.warn(
           { err },
-          "[MapsService] Free OSRM road routing failed, falling back to synthetic road path",
+          "[MapsService] Free OSRM road routing failed, falling back to mock fixtures",
         );
       }
     }
 
-    // Deterministic Mock Provider
+    // 3. Deterministic Mock Provider
     const mock = getMockRoadDistanceAndDuration(origin, destination);
-    // Interpolate points between origin and destination to generate a realistic road path
     const path = this.generateSyntheticRoadPath(origin, destination);
     const polyline = this.encodePolyline(path);
 
+    // Generate a second route alternative with slight distance/duration variation
+    const altPath: Array<[number, number]> = path.map(([lat, lng], i) => [
+      Number((lat + (i > 0 && i < path.length - 1 ? 0.001 : 0)).toFixed(6)),
+      Number((lng + (i > 0 && i < path.length - 1 ? 0.0015 : 0)).toFixed(6)),
+    ]);
+    const altPolyline = this.encodePolyline(altPath);
+
     return {
       mode: "MOCK_DEV",
+      provider: "MOCK",
+      calculatedAt,
       distanceMeters: mock.distanceMeters,
       durationSeconds: mock.durationSeconds,
       encodedPolyline: polyline,
       decodedPath: path,
+      alternatives: [
+        {
+          summary: "Alternative Campus Link Road",
+          distanceMeters: Math.round(mock.distanceMeters * 1.15),
+          durationSeconds: Math.round(mock.durationSeconds * 1.2),
+          encodedPolyline: altPolyline,
+          decodedPath: altPath,
+        },
+      ],
+      steps: [
+        { instruction: "Head towards main campus road", distanceMeters: 400, durationSeconds: 60 },
+        { instruction: "Continue onto connecting corridor", distanceMeters: mock.distanceMeters - 800, durationSeconds: mock.durationSeconds - 120 },
+        { instruction: "Arrive at designated drop hub", distanceMeters: 400, durationSeconds: 60 },
+      ],
+      warnings: this.isLiveMode()
+        ? ["External routing service was temporarily unreachable. Displaying fallback campus road corridor."]
+        : undefined,
     };
   }
 

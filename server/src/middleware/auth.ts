@@ -1,9 +1,9 @@
 import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 import { env } from "../config/env";
-import { User } from "../models/User";
+import { User, UserRole, AccountType, isVerificationApproved } from "../models/User";
 
-export type UserRole = "student" | "moderator" | "campus_admin" | "super_admin";
+export { UserRole, AccountType };
 
 export interface AuthUserPayload {
   id: string;
@@ -12,6 +12,7 @@ export interface AuthUserPayload {
   college: string;
   verificationStatus: string;
   role?: UserRole;
+  accountType?: AccountType;
   institutionId?: string;
   campusId?: string;
   tokenVersion?: number;
@@ -29,6 +30,7 @@ export function signToken(payload: AuthUserPayload): string {
   const safePayload = {
     ...payload,
     role: payload.role || "student",
+    accountType: payload.accountType || "PASSENGER",
   };
   return jwt.sign(safePayload, JWT_SECRET, { expiresIn: "30d" });
 }
@@ -158,4 +160,37 @@ export function requireOwnership(paramKey: string = "id") {
 
     next();
   };
+}
+
+export async function requireVerificationApproved(
+  req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  if (!req.user) {
+    res.status(401).json({
+      code: "UNAUTHORIZED",
+      message: "Authentication required.",
+    });
+    return;
+  }
+
+  try {
+    const user = await User.findById(req.user.id).select("verificationStatus role").lean();
+    if (!user || !isVerificationApproved(user)) {
+      res.status(403).json({
+        code: "VERIFICATION_REQUIRED",
+        message:
+          "Approved verification required to perform this action. Current status: " +
+          (user?.verificationStatus || "unverified"),
+      });
+      return;
+    }
+    next();
+  } catch (err) {
+    res.status(500).json({
+      code: "SERVER_ERROR",
+      message: "Failed to verify account authorization.",
+    });
+  }
 }

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import L from 'leaflet';
+import { api } from '../../services/api';
 import {
   Compass,
   Clock,
@@ -712,43 +713,48 @@ export const PickupAndRouteNavigationMap: React.FC<Props> = ({
     async function fetchDynamicRoadRoutes() {
       try {
         setLoadingRoutes(true);
-        const originLngLat = `${originCoords[1]},${originCoords[0]}`;
-        const destLngLat = `${destCoords[1]},${destCoords[0]}`;
-
-        // Direct driving query with alternatives
-        const directUrl = `https://router.project-osrm.org/route/v1/driving/${originLngLat};${destLngLat}?overview=full&geometries=geojson&alternatives=true&steps=true`;
-        const directRes = await fetch(directUrl);
-        const directData = await directRes.json();
+        // Call consolidated backend routing API
+        const routeData = await api.calculateRoadRoute(
+          { lat: originCoords[0], lng: originCoords[1] },
+          { lat: destCoords[0], lng: destCoords[1] }
+        );
 
         if (isCancelled) return;
 
         const baseCorridors = generateCorridors(originCoords, destCoords);
 
-        if (directData.routes && directData.routes.length > 0) {
-          const primary = directData.routes[0];
-          const primaryCoords: [number, number][] = primary.geometry.coordinates.map(
-            ([lng, lat]: [number, number]) => [lat, lng]
-          );
+        if (routeData && routeData.decodedPath && routeData.decodedPath.length > 0) {
+          const primaryCoords: [number, number][] = routeData.decodedPath;
 
-          // Update primary corridor with live OSRM data while preserving clean identity
+          // Update primary corridor with live routing data
           baseCorridors[0].latLngs = snapRouteEndpoints(primaryCoords, originCoords, destCoords);
-          baseCorridors[0].distanceKm = +(primary.distance / 1000).toFixed(1);
-          baseCorridors[0].durationMinutes = Math.max(3, Math.round(primary.duration / 60));
-          baseCorridors[0].fuelEstimateInr = Math.max(10, Math.round((primary.distance / 1000) * 3));
+          baseCorridors[0].distanceKm = +(routeData.distanceMeters / 1000).toFixed(1);
+          baseCorridors[0].durationMinutes = Math.max(3, Math.round(routeData.durationSeconds / 60));
+          baseCorridors[0].fuelEstimateInr = Math.max(10, Math.round((routeData.distanceMeters / 1000) * 3));
 
-          // If OSRM returned alternative, check whether it is a legitimate local detour (< 1.35x)
-          if (directData.routes[1] && baseCorridors[1]) {
-            const alt = directData.routes[1];
-            const altDistKm = +(alt.distance / 1000).toFixed(1);
-            if (altDistKm <= baseCorridors[0].distanceKm * 1.35) {
+          // If turn-by-turn steps returned from backend, attach to primary corridor
+          if (routeData.steps && routeData.steps.length > 0) {
+            baseCorridors[0].turnSteps = routeData.steps.map((s, idx) => ({
+              icon: idx === 0 ? 'depart' : idx === routeData.steps!.length - 1 ? 'arrive' : 'straight',
+              instruction: s.instruction,
+              distanceText: s.distanceMeters > 1000 ? `${(s.distanceMeters / 1000).toFixed(1)} km` : `${s.distanceMeters} m`,
+            }));
+          }
+
+          // If backend returned alternatives, attach to secondary corridor
+          if (routeData.alternatives && routeData.alternatives.length > 0 && baseCorridors[1]) {
+            const alt = routeData.alternatives[0];
+            const altDistKm = +(alt.distanceMeters / 1000).toFixed(1);
+            if (altDistKm <= baseCorridors[0].distanceKm * 1.4) {
               baseCorridors[1].latLngs = snapRouteEndpoints(
-                alt.geometry.coordinates.map(([lng, lat]: [number, number]) => [lat, lng]),
+                alt.decodedPath,
                 originCoords,
                 destCoords
               );
               baseCorridors[1].distanceKm = altDistKm;
-              baseCorridors[1].durationMinutes = Math.max(4, Math.round(alt.duration / 60));
+              baseCorridors[1].durationMinutes = Math.max(4, Math.round(alt.durationSeconds / 60));
               baseCorridors[1].fuelEstimateInr = Math.max(10, Math.round(altDistKm * 3));
+              baseCorridors[1].name = alt.summary || baseCorridors[1].name;
             }
           }
         }

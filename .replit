@@ -1,0 +1,14 @@
+﻿# Replit configuration for CampusRide Backend
+modules = ["nodejs-20"]
+run = "npm --prefix server run dev"
+
+[nix]
+channel = "stable-24_05"
+
+[deployment]
+run = ["sh", "-c", "npm --prefix server install && npm --prefix server run build && npm --prefix server start"]
+deploymentTarget = "autoscale"
+
+[[ports]]
+localPort = 5000
+externalPort = 80

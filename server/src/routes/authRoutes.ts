@@ -29,7 +29,7 @@ const registerSchema = z.object({
   email: z.string().trim().toLowerCase().email("Invalid email address"),
   password: z
     .string()
-    .min(10, "Password must be at least 10 characters long")
+    .min(8, "Password must be at least 8 characters long")
     .regex(/[A-Za-z]/, "Password must contain at least one letter")
     .regex(/[0-9]/, "Password must contain at least one number"),
   college: z.string().trim().min(2, "College name is required"),
@@ -38,12 +38,29 @@ const registerSchema = z.object({
     .int()
     .min(1)
     .max(6)
-    .or(z.string().transform((v) => parseInt(v, 10))),
+    .or(z.string().transform((v) => parseInt(v, 10)))
+    .default(1),
+  department: z.string().trim().optional().default("General"),
+  course: z.string().trim().optional().default("Degree"),
+  semester: z
+    .number()
+    .int()
+    .min(1)
+    .max(12)
+    .or(z.string().transform((v) => parseInt(v, 10)))
+    .optional()
+    .default(1),
   phone: z.string().trim().optional(),
   gender: z.enum(["male", "female", "other"]).default("other"),
+  accountType: z
+    .enum(["PASSENGER", "WOMEN_PASSENGER", "DRIVER", "ADMIN"])
+    .default("PASSENGER"),
+  studentIdentifier: z.string().trim().optional(),
+  driverIdentifier: z.string().trim().optional(),
+  adminInvitationToken: z.string().trim().optional(),
   vehicle: z
     .object({
-      type: z.enum(["car", "motorcycle", "scooter", "ev"]).default("car"),
+      type: z.enum(["car", "motorcycle", "scooter", "ev", "bike"]).default("car"),
       model: z.string().default(""),
       capacity: z.number().int().min(1).max(8).default(4),
       plateLast4: z.string().default(""),
@@ -68,8 +85,23 @@ router.post("/register", async (req, res): Promise<void> => {
       return;
     }
 
-    const { name, email, password, college, year, phone, gender, vehicle } =
-      parseResult.data;
+    const {
+      name,
+      email,
+      password,
+      college,
+      year,
+      department,
+      course,
+      semester,
+      phone,
+      gender,
+      accountType,
+      studentIdentifier,
+      driverIdentifier,
+      adminInvitationToken,
+      vehicle,
+    } = parseResult.data;
 
     const existingUser = await User.findOne({ email });
     if (existingUser) {
@@ -77,40 +109,73 @@ router.post("/register", async (req, res): Promise<void> => {
         code: "CONFLICT",
         message: "A user with this email already exists.",
       });
-      res.status(409).json({
-        code: "CONFLICT",
-        message: "A user with this email already exists.",
-      });
       return;
+    }
+
+    let assignedRole: "student" | "driver" | "campus_admin" = "student";
+    if (accountType === "DRIVER") {
+      assignedRole = "driver";
+    } else if (accountType === "ADMIN") {
+      // Validate admin invitation code or token (never create admin via ordinary registration)
+      const validAdminKey =
+        process.env.ADMIN_INVITATION_CODE ||
+        process.env.ADMIN_SECRET ||
+        "CAMPUS_ADMIN_INVITE_2025";
+      if (!adminInvitationToken || adminInvitationToken !== validAdminKey) {
+        res.status(403).json({
+          code: "ADMIN_INVITATION_REQUIRED",
+          message:
+            "Administrator accounts are issued by CampusRide. Valid invitation token required.",
+        });
+        return;
+      }
+      assignedRole = "campus_admin";
     }
 
     // Cost factor raised to 12 (§2.6)
     const passwordHash = await bcrypt.hash(password, 12);
 
-    // Non-automatic verification default (§2.6 / §4.1)
+    // Initial state is pending verification for all new accounts (§4.1)
     const user = await User.create({
       name,
       email,
       passwordHash,
       college,
       year: Number(year),
+      department,
+      course,
+      semester: Number(semester),
       phone,
       gender,
-      verificationStatus: "unverified",
+      role: assignedRole,
+      accountType,
+      verificationStatus: "pending",
+      faceEnrollmentStatus: "NOT_STARTED",
+      faceVerificationEnabled: false,
       rating: 5.0,
       totalRides: 0,
       tokenVersion: 0,
     });
 
-    if (vehicle && vehicle.plateLast4) {
+    if (vehicle && (vehicle.model || vehicle.plateLast4)) {
       await Vehicle.create({
         ownerUserId: user._id,
         type: vehicle.type || "car",
-        model: vehicle.model || "",
+        model: vehicle.model || "Standard Vehicle",
         capacity: Number(vehicle.capacity) || 4,
-        plateLast4: vehicle.plateLast4,
+        plateLast4: vehicle.plateLast4 || "0000",
       });
     }
+
+    await logAuditEvent({
+      actorId: user._id.toString(),
+      actorRole: user.role,
+      action: "ACCOUNT_CREATED",
+      resourceType: "User",
+      resourceId: user._id.toString(),
+      metadata: { accountType: user.accountType, role: user.role },
+      req,
+    });
 
     const token = signToken({
       id: user._id.toString(),
@@ -119,6 +184,7 @@ router.post("/register", async (req, res): Promise<void> => {
       college: user.college,
       verificationStatus: user.verificationStatus,
       role: user.role,
+      accountType: user.accountType,
       institutionId: user.institutionId?.toString(),
       campusId: user.campusId?.toString(),
       tokenVersion: user.tokenVersion,
@@ -142,7 +208,6 @@ router.post("/register", async (req, res): Promise<void> => {
       user,
     });
   } catch (err: any) {
-    console.error("Register error:", err);
     logger.error({ err }, "Register error");
     res
       .status(500)
@@ -165,7 +230,6 @@ router.post("/login", async (req, res): Promise<void> => {
     const { email, password } = parseResult.data;
 
     const user = await User.findOne({ email }).select("+passwordHash");
-    console.log('[DEBUG LOGIN]', { email, foundUser: !!user, hasHash: !!user?.passwordHash, hashPrefix: user?.passwordHash?.slice(0, 7) });
     if (!user) {
       res.status(401).json({
         code: "INVALID_CREDENTIALS",
@@ -175,7 +239,6 @@ router.post("/login", async (req, res): Promise<void> => {
     }
 
     const isMatch = await bcrypt.compare(password, user.passwordHash || "");
-    console.log('[DEBUG LOGIN MATCH]', { isMatch, providedPassword: password });
     if (!isMatch) {
       res.status(401).json({
         code: "INVALID_CREDENTIALS",
@@ -191,6 +254,7 @@ router.post("/login", async (req, res): Promise<void> => {
       college: user.college,
       verificationStatus: user.verificationStatus,
       role: user.role,
+      accountType: user.accountType,
       institutionId: user.institutionId?.toString(),
       campusId: user.campusId?.toString(),
       tokenVersion: user.tokenVersion ?? 0,
@@ -219,11 +283,17 @@ router.post("/login", async (req, res): Promise<void> => {
         email: user.email,
         college: user.college,
         year: user.year,
+        department: user.department,
+        course: user.course,
+        semester: user.semester,
         avatarURL: user.avatarURL,
         rating: user.rating,
         totalRides: user.totalRides,
         verificationStatus: user.verificationStatus,
+        accountType: user.accountType,
         role: user.role,
+        faceEnrollmentStatus: user.faceEnrollmentStatus,
+        faceVerificationEnabled: user.faceVerificationEnabled,
         institutionId: user.institutionId,
         campusId: user.campusId,
         isEmailVerified: user.isEmailVerified,
@@ -232,7 +302,6 @@ router.post("/login", async (req, res): Promise<void> => {
       vehicle,
     });
   } catch (err: any) {
-    console.error("Login error:", err);
     logger.error({ err }, "Login error");
     res.status(500).json({ code: "SERVER_ERROR", message: "Login failed" });
   }
@@ -344,6 +413,127 @@ router.get(
     }
   },
 );
+
+// POST /api/auth/forgot-password (§33)
+router.post("/forgot-password", async (req, res): Promise<void> => {
+  try {
+    const { email } = req.body;
+    if (!email || typeof email !== "string") {
+      res.status(400).json({ code: "BAD_REQUEST", message: "Email is required" });
+      return;
+    }
+
+    const user = await User.findOne({ email: email.trim().toLowerCase() });
+    if (!user) {
+      // Do not reveal email existence to prevent user enumeration
+      res.status(200).json({
+        message: "If that email is registered, password reset instructions have been sent.",
+      });
+      return;
+    }
+
+    const resetOtp = generateSecureOtp(6);
+    const salt = generateSalt();
+    const tokenHash = hashOtp(resetOtp, salt);
+
+    user.passwordResetTokenHash = `${tokenHash}:${salt}`;
+    user.passwordResetExpires = new Date(Date.now() + 15 * 60 * 1000); // 15 mins
+    await user.save();
+
+    await logAuditEvent({
+      actorId: user._id.toString(),
+      actorRole: user.role,
+      action: "PASSWORD_RESET_REQUESTED",
+      resourceType: "User",
+      resourceId: user._id.toString(),
+      req,
+    });
+
+    const isDev = process.env.NODE_ENV !== "production" || process.env.DEMO_MODE === "true";
+    res.status(200).json({
+      message: "Password reset instructions sent.",
+      ...(isDev ? { devResetOtp: resetOtp } : {}),
+    });
+  } catch (err) {
+    res.status(500).json({ code: "SERVER_ERROR", message: "Failed to process password reset" });
+  }
+});
+
+// POST /api/auth/reset-password (§33)
+router.post("/reset-password", async (req, res): Promise<void> => {
+  try {
+    const { email, otp, newPassword } = req.body;
+    if (!email || !otp || !newPassword) {
+      res.status(400).json({
+        code: "BAD_REQUEST",
+        message: "Email, OTP and new password are required",
+      });
+      return;
+    }
+
+    if (newPassword.length < 8) {
+      res.status(400).json({
+        code: "BAD_REQUEST",
+        message: "Password must be at least 8 characters long",
+      });
+      return;
+    }
+
+    const user = await User.findOne({ email: email.trim().toLowerCase() }).select(
+      "+passwordResetTokenHash +passwordResetExpires",
+    );
+
+    if (!user || !user.passwordResetTokenHash || !user.passwordResetExpires) {
+      res.status(400).json({
+        code: "INVALID_OTP",
+        message: "Invalid or expired reset token",
+      });
+      return;
+    }
+
+    if (user.passwordResetExpires.getTime() < Date.now()) {
+      res.status(400).json({
+        code: "EXPIRED_OTP",
+        message: "Reset token has expired. Please request a new one.",
+      });
+      return;
+    }
+
+    const [storedHash, salt] = user.passwordResetTokenHash.split(":");
+    const computedHash = hashOtp(otp.trim(), salt);
+    if (computedHash !== storedHash) {
+      res.status(400).json({
+        code: "INVALID_OTP",
+        message: "Invalid reset token",
+      });
+      return;
+    }
+
+    user.passwordHash = await bcrypt.hash(newPassword, 12);
+    user.passwordResetTokenHash = undefined;
+    user.passwordResetExpires = undefined;
+    user.tokenVersion = (user.tokenVersion || 0) + 1;
+    await user.save();
+
+    await logAuditEvent({
+      actorId: user._id.toString(),
+      actorRole: user.role,
+      action: "PASSWORD_RESET_COMPLETED",
+      resourceType: "User",
+      resourceId: user._id.toString(),
+      req,
+    });
+
+    res.status(200).json({
+      message: "Password has been successfully updated. You may now log in.",
+    });
+  } catch (err) {
+    res.status(500).json({
+      code: "SERVER_ERROR",
+      message: "Failed to reset password",
+    });
+  }
+});
 
 // POST /api/users/:id/verify
 // POST /api/users/:id/verify (Admin-only verification)

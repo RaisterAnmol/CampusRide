@@ -2,10 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
-import { ArrowRight, Menu, X, ShieldAlert, LogOut, ShieldCheck, Car, Search, Shield, Settings } from 'lucide-react';
+import { ArrowRight, Menu, X, ShieldAlert, LogOut, ShieldCheck, Car, Search, Shield, User, Clock } from 'lucide-react';
 
 export const Navbar: React.FC = () => {
-  const { user, logout, switchDemoUser, activePersona } = useAuth();
+  const { user, logout } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const [isScrolled, setIsScrolled] = useState(false);
@@ -13,7 +13,7 @@ export const Navbar: React.FC = () => {
 
   useEffect(() => {
     const handleScroll = () => {
-      setIsScrolled(window.scrollY > 30);
+      setIsScrolled(window.scrollY > 20);
     };
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
@@ -23,366 +23,271 @@ export const Navbar: React.FC = () => {
     setMobileMenuOpen(false);
   }, [location.pathname]);
 
-  // Persona-specific navigation links
-  let navLinks: { label: string; href: string }[] = [];
-  if (activePersona === 'driver') {
-    navLinks = [
-      { label: 'Post a Ride', href: '/post' },
-    ];
-  } else if (activePersona === 'admin') {
-    navLinks = [
-      { label: 'Operations Dashboard', href: '/admin' },
-    ];
-  } else {
-    // passenger persona
-    navLinks = [
-      { label: 'Find a Ride', href: '/search' },
-    ];
+  const isDriver = user?.role === 'driver' || user?.accountType === 'DRIVER';
+  const isAdmin = user?.role === 'super_admin' || user?.role === 'campus_admin' || user?.role === 'moderator';
+
+  // Universal Navigation Links
+  const navLinks = [
+    { label: 'Find a Ride', href: '/search' },
+    { label: 'Offer a Ride', href: '/post' },
+    { label: 'Campuses', href: '/colleges' },
+    { label: 'Safety', href: '/safety' },
+  ];
+
+  if (isAdmin) {
+    navLinks.push({ label: 'Admin Dashboard', href: '/admin' });
   }
 
-  const isPriya = activePersona === 'passenger' && (user?.preferences?.womenOnlyDriver || user?.gender === 'female');
-  const isRahul = activePersona === 'passenger' && !isPriya;
-  const isAditya = activePersona === 'driver';
-  const isAdmin = activePersona === 'admin';
-
-  const handlePersonaSelect = async (persona: 'aditya' | 'rahul' | 'priya' | 'admin') => {
-    await switchDemoUser(persona);
-    if (persona === 'aditya') {
-      navigate('/post');
-    } else if (persona === 'admin') {
-      navigate('/admin');
-    } else {
-      navigate('/search');
-    }
-  };
+  if (user) {
+    navLinks.push({ label: 'Verification', href: '/verification' });
+  }
 
   return (
-    <>
-      {/* Top Telemetry & Persona Switcher Bar - Modern Refined UI */}
-      <div className="bg-slate-900 text-slate-200 text-xs py-2 px-4 sm:px-8 flex flex-wrap items-center justify-between gap-3 border-b border-slate-800 shadow-sm z-50 relative">
-        <div className="flex items-center gap-2.5">
-          <span className="relative flex h-2 w-2">
-            <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${
-              isPriya ? 'bg-pink-400' : isRahul ? 'bg-sky-400' : isAdmin ? 'bg-amber-400' : 'bg-emerald-400'
-            }`}></span>
-            <span className={`relative inline-flex rounded-full h-2 w-2 ${
-              isPriya ? 'bg-pink-500' : isRahul ? 'bg-sky-500' : isAdmin ? 'bg-amber-500' : 'bg-emerald-500'
-            }`}></span>
-          </span>
-          <span className="text-slate-400 font-semibold tracking-wider uppercase text-[11px]">Role Mode:</span>
-          {isAditya && (
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-600 text-white border border-emerald-400 shadow-sm ring-2 ring-emerald-500/30">
-              <span>🚗</span>
-              <span>DRIVER (POST RIDE ONLY)</span>
-            </span>
-          )}
-          {isPriya && (
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-pink-600 text-white border border-pink-400 shadow-sm ring-2 ring-pink-500/30">
-              <span>🛡️</span>
-              <span>WOMEN-ONLY (SEARCH & BOOK ONLY)</span>
-            </span>
-          )}
-          {isRahul && (
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-sky-600 text-white border border-sky-400 shadow-sm ring-2 ring-sky-500/30">
-              <span>🎒</span>
-              <span>PASSENGER (SEARCH & BOOK ONLY)</span>
-            </span>
-          )}
-          {isAdmin && (
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-amber-600 text-white border border-amber-400 shadow-sm ring-2 ring-amber-500/30">
-              <span>🏛️</span>
-              <span>ADMIN (OPERATIONS DASHBOARD)</span>
-            </span>
-          )}
-        </div>
-
-        <div className="flex items-center gap-1.5 flex-wrap">
-          <span className="text-slate-400 font-semibold tracking-wider uppercase text-[11px] hidden sm:inline mr-1">Switch Persona:</span>
-          <button
-            onClick={() => handlePersonaSelect('aditya')}
-            title="Switch to Aditya (Driver) - Only Post a Ride"
-            className={`px-3 py-1 rounded-full text-xs font-medium transition-all duration-150 cursor-pointer flex items-center gap-1.5 ${
-              isAditya
-                ? 'bg-emerald-600 text-white font-semibold shadow-sm ring-1 ring-emerald-400 border border-emerald-500'
-                : 'bg-slate-800 text-slate-300 hover:text-white hover:bg-slate-700 border border-slate-700/70'
-            }`}
-          >
-            <span>🚗</span>
-            <span>Aditya (Driver)</span>
-          </button>
-          <button
-            onClick={() => handlePersonaSelect('rahul')}
-            title="Switch to Rahul (Passenger) - Only Search Rides"
-            className={`px-3 py-1 rounded-full text-xs font-medium transition-all duration-150 cursor-pointer flex items-center gap-1.5 ${
-              isRahul
-                ? 'bg-sky-600 text-white font-semibold shadow-sm ring-1 ring-sky-400 border border-sky-500'
-                : 'bg-slate-800 text-slate-300 hover:text-white hover:bg-slate-700 border border-slate-700/70'
-            }`}
-          >
-            <span>🎒</span>
-            <span>Rahul (Passenger)</span>
-          </button>
-          <button
-            onClick={() => handlePersonaSelect('priya')}
-            title="Switch to Priya (Women-Only Passenger) - Only Search Rides"
-            className={`px-3 py-1 rounded-full text-xs font-medium transition-all duration-150 cursor-pointer flex items-center gap-1.5 ${
-              isPriya
-                ? 'bg-pink-600 text-white font-semibold shadow-sm ring-1 ring-pink-400 border border-pink-500'
-                : 'bg-slate-800 text-slate-300 hover:text-white hover:bg-slate-700 border border-slate-700/70'
-            }`}
-          >
-            <span>🛡️</span>
-            <span>Priya (Women-Only)</span>
-          </button>
-          <button
-            onClick={() => handlePersonaSelect('admin')}
-            title="Switch to Campus Admin - Opens Operations Dashboard"
-            className={`px-3 py-1 rounded-full text-xs font-medium transition-all duration-150 cursor-pointer flex items-center gap-1.5 ${
-              isAdmin
-                ? 'bg-amber-600 text-white font-semibold shadow-sm ring-1 ring-amber-400 border border-amber-500'
-                : 'bg-slate-800 text-slate-300 hover:text-white hover:bg-slate-700 border border-slate-700/70'
-            }`}
-          >
-            <span>🏛️</span>
-            <span>Campus Admin</span>
-          </button>
-        </div>
-      </div>
-
-      {/* Main Responsive Header */}
-      <motion.header
-      className={`sticky top-0 z-40 w-full transition-all duration-300 ${
+    <motion.header
+      className={`sticky top-0 z-40 w-full transition-all duration-200 ${
         isScrolled
-          ? 'bg-[#FFFDFC]/95 backdrop-blur-md border-b border-[#EAE7DF] py-3 shadow-subtle'
-          : 'bg-[#F7F5F0] py-4 border-b border-[#EAE7DF]/60'
+          ? 'bg-white/95 backdrop-blur-md border-b border-slate-200 py-3 shadow-xs'
+          : 'bg-[#F8FAFC] py-4 border-b border-slate-200/80'
       }`}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between">
-        {/* Logo with Deep Campus Green dot */}
+        {/* Brand Logo */}
         <Link to="/" className="flex items-center gap-2.5 group">
           <span className="w-2.5 h-2.5 rounded-full bg-[#143D32] ring-4 ring-[#143D32]/20 group-hover:scale-125 transition-transform" />
-          <span className="text-xl font-bold tracking-tight text-[#18201D] font-sans">
+          <span className="text-xl font-bold tracking-tight text-slate-900 font-sans">
             CampusRide
           </span>
-          {activePersona === 'driver' && (
-            <span className="text-[10px] font-bold px-2 py-0.5 bg-emerald-100 text-emerald-800 rounded-full border border-emerald-300">
-              DRIVER
-            </span>
-          )}
-          {activePersona === 'passenger' && (
-            <span className="text-[10px] font-bold px-2 py-0.5 bg-blue-100 text-blue-800 rounded-full border border-blue-300">
-              PASSENGER
-            </span>
-          )}
-          {activePersona === 'admin' && (
-            <span className="text-[10px] font-bold px-2 py-0.5 bg-amber-100 text-amber-800 rounded-full border border-amber-300">
-              ADMIN
-            </span>
-          )}
+          <span className="text-[10px] font-mono font-bold px-2 py-0.5 bg-slate-100 text-slate-600 rounded-full border border-slate-200 hidden sm:inline">
+            UNIVERSITY TRANSIT
+          </span>
         </Link>
 
-          {/* Desktop Nav Links (Persona Filtered) */}
-          <nav className="hidden md:flex items-center gap-7 text-sm font-medium text-[#5F6964]">
-            {navLinks.map((link) => (
+        {/* Desktop Nav Links */}
+        <nav className="hidden md:flex items-center gap-7 text-sm font-medium text-slate-600">
+          {navLinks.map((link) => {
+            const isActive = location.pathname === link.href;
+            return (
               <Link
                 key={link.label}
                 to={link.href}
-                className="hover:text-[#18201D] transition-colors"
+                className={`transition-colors py-1 ${
+                  isActive
+                    ? 'text-[#143D32] font-bold border-b-2 border-[#143D32]'
+                    : 'hover:text-slate-900'
+                }`}
               >
                 {link.label}
               </Link>
-            ))}
-          </nav>
+            );
+          })}
+        </nav>
 
-          {/* Right Action Cluster (Persona Specific) */}
-          <div className="hidden md:flex items-center gap-3">
-            {user ? (
-              <div className="flex items-center gap-3">
+        {/* Right Action Cluster: Real Login / Auth State */}
+        <div className="hidden md:flex items-center gap-3">
+          {user ? (
+            <div className="flex items-center gap-3">
+              {isDriver && (
                 <Link
-                  to={activePersona === 'driver' ? '/post' : activePersona === 'admin' ? '/admin' : '/search'}
-                  className="flex items-center gap-2 p-1 rounded-lg hover:bg-black/5 transition-colors"
-                  title="View Profile"
+                  to="/post"
+                  className="px-3.5 py-1.5 text-xs font-semibold text-white bg-[#143D32] hover:bg-[#0f2e26] rounded-xl transition-colors flex items-center gap-1.5 shadow-xs"
                 >
-                  <img
-                    src={user.avatarURL || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=120&q=80'}
-                    alt={user.name}
-                    className="w-8 h-8 rounded-full object-cover border border-[#DDD9CE]"
-                  />
-                  <div className="flex flex-col text-left">
-                    <span className="text-xs font-semibold text-[#18201D] leading-none">{user.name.split(' ')[0]}</span>
-                    <span className="text-[10px] text-[#5F6964] leading-tight flex items-center gap-1">
-                      {user.verificationStatus === 'verified' ? (
-                        <span className="text-[#3E8F6C] font-medium flex items-center gap-0.5">
-                          <ShieldCheck className="w-2.5 h-2.5 inline" /> Verified
-                        </span>
-                      ) : (
-                        <span className="text-[#B8892E] font-medium">Pending ID</span>
-                      )}
+                  <Car className="w-3.5 h-3.5 text-emerald-300" />
+                  <span>Post a Ride</span>
+                </Link>
+              )}
+
+              {isAdmin && (
+                <Link
+                  to="/admin"
+                  className="px-3.5 py-1.5 text-xs font-semibold text-amber-900 bg-amber-100 hover:bg-amber-200 border border-amber-300 rounded-xl transition-colors flex items-center gap-1.5 shadow-xs"
+                >
+                  <ShieldAlert className="w-3.5 h-3.5 text-amber-700" />
+                  <span>Admin Panel</span>
+                </Link>
+              )}
+
+              {/* Profile Capsule */}
+              <Link
+                to="/verification"
+                className="flex items-center gap-2.5 px-3 py-1.5 rounded-xl border border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50 transition-all shadow-xs group"
+                title="Manage ID Verification"
+              >
+                <img
+                  src={
+                    user.avatarURL ||
+                    'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=120&q=80'
+                  }
+                  alt={user.name}
+                  className="w-7 h-7 rounded-full object-cover border border-slate-300"
+                />
+                <div className="flex flex-col text-left">
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-xs font-bold text-slate-900 leading-none">
+                      {user.name.split(' ')[0]}
                     </span>
+                    {isDriver && (
+                      <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300">
+                        DRIVER
+                      </span>
+                    )}
+                    {isAdmin && (
+                      <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-300">
+                        ADMIN
+                      </span>
+                    )}
+                    {user.accountType === 'WOMEN_PASSENGER' && (
+                      <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-pink-100 text-pink-800 border border-pink-300">
+                        WOMEN ONLY
+                      </span>
+                    )}
                   </div>
-                </Link>
+                  <span className="text-[10px] text-slate-500 leading-tight flex items-center gap-1 mt-0.5">
+                    {user.verificationStatus === 'verified' ? (
+                      <span className="text-emerald-700 font-medium flex items-center gap-0.5">
+                        <ShieldCheck className="w-2.5 h-2.5 inline text-emerald-600" /> Verified
+                      </span>
+                    ) : (
+                      <span className="text-amber-700 font-medium flex items-center gap-0.5">
+                        <Clock className="w-2.5 h-2.5 inline text-amber-600" /> Pending ID
+                      </span>
+                    )}
+                  </span>
+                </div>
+              </Link>
 
-                {/* Persona-specific primary button */}
-                {activePersona === 'driver' && (
-                  <Link
-                    to="/post"
-                    className="px-3.5 py-1.5 text-xs font-semibold text-white bg-[#143D32] hover:bg-[#0f2e26] rounded-lg transition-colors flex items-center gap-1.5 shadow-sm"
-                  >
-                    <Car className="w-3.5 h-3.5" />
-                    <span>Post a Ride</span>
-                  </Link>
-                )}
-
-                {activePersona === 'passenger' && (
-                  <Link
-                    to="/search"
-                    className="px-3.5 py-1.5 text-xs font-semibold text-white bg-[#143D32] hover:bg-[#0f2e26] rounded-lg transition-colors flex items-center gap-1.5 shadow-sm"
-                  >
-                    <Search className="w-3.5 h-3.5" />
-                    <span>Find a Ride</span>
-                  </Link>
-                )}
-
-                {activePersona === 'admin' && (
-                  <Link
-                    to="/admin"
-                    className="px-3.5 py-1.5 text-xs font-semibold text-emerald-950 bg-emerald-100 hover:bg-emerald-200 border border-emerald-300 rounded-lg transition-colors flex items-center gap-1.5 shadow-sm"
-                  >
-                    <ShieldAlert className="w-3.5 h-3.5 text-emerald-700" />
-                    <span>Admin Dashboard</span>
-                  </Link>
-                )}
-
-                <button
-                  onClick={logout}
-                  className="p-1.5 text-[#5F6964] hover:text-[#18201D] transition-colors"
-                  title="Sign out"
-                >
-                  <LogOut className="w-4 h-4" />
-                </button>
-              </div>
-            ) : (
-              <div className="flex items-center gap-2">
-                <Link
-                  to="/auth"
-                  className="px-3 py-1.5 text-xs font-semibold text-[#18201D] hover:text-[#143D32] transition-colors"
-                >
-                  Log in
-                </Link>
-                <Link
-                  to="/search"
-                  className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-[#143D32] hover:bg-[#103229] text-white text-xs font-semibold shadow-subtle transition-all hover:-translate-y-0.5"
-                >
-                  <span>Find a ride</span>
-                  <ArrowRight className="w-3.5 h-3.5" />
-                </Link>
-              </div>
-            )}
-          </div>
-
-          {/* Mobile Menu Button */}
-          <button
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="md:hidden p-2 text-[#18201D] rounded-lg hover:bg-black/5 transition-colors"
-            aria-label="Toggle navigation menu"
-          >
-            {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-          </button>
+              {/* Log Out Button */}
+              <button
+                onClick={logout}
+                className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-colors cursor-pointer"
+                title="Log Out"
+                aria-label="Log Out"
+              >
+                <LogOut className="w-4 h-4" />
+              </button>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2">
+              <Link
+                to="/login"
+                className="px-4 py-2 text-xs font-bold text-slate-700 hover:text-[#143D32] hover:bg-slate-200/60 rounded-xl transition-colors"
+              >
+                Log in
+              </Link>
+              <Link
+                to="/register"
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#143D32] hover:bg-[#0f2e26] text-white text-xs font-bold shadow-xs hover:shadow transition-all hover:-translate-y-0.5 cursor-pointer"
+              >
+                <span>Sign up</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </Link>
+            </div>
+          )}
         </div>
 
-        {/* Mobile Menu */}
-        <AnimatePresence>
-          {mobileMenuOpen && (
-            <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
-              exit={{ opacity: 0, height: 0 }}
-              className="md:hidden bg-[#FFFDFC] border-b border-[#EAE7DF] px-6 py-6 shadow-dropdown overflow-hidden"
-            >
-              <div className="flex flex-col gap-4 text-base font-semibold text-[#18201D]">
-                {navLinks.map((link) => (
-                  <Link
-                    key={link.label}
-                    to={link.href}
-                    className="hover:text-[#143D32] transition-colors py-1"
-                  >
-                    {link.label}
-                  </Link>
-                ))}
+        {/* Mobile Menu Button */}
+        <button
+          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+          className="md:hidden p-2 text-slate-800 rounded-xl hover:bg-black/5 transition-colors"
+          aria-label="Toggle navigation menu"
+        >
+          {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+        </button>
+      </div>
 
-                {activePersona === 'admin' && (
-                  <Link
-                    to="/admin"
-                    className="flex items-center gap-2 text-emerald-800 py-1 font-semibold"
-                  >
-                    <ShieldAlert className="w-4 h-4 text-emerald-600" />
-                    Security & Operations Dashboard
-                  </Link>
-                )}
+      {/* Mobile Menu */}
+      <AnimatePresence>
+        {mobileMenuOpen && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            className="md:hidden bg-white border-b border-slate-200 px-6 py-5 shadow-lg overflow-hidden"
+          >
+            <div className="flex flex-col gap-3 text-base font-semibold text-slate-900">
+              {navLinks.map((link) => (
+                <Link
+                  key={link.label}
+                  to={link.href}
+                  className="hover:text-[#143D32] transition-colors py-1.5 border-b border-slate-100 last:border-0"
+                >
+                  {link.label}
+                </Link>
+              ))}
 
-                {user ? (
-                  <div className="pt-4 border-t border-[#EAE7DF] flex flex-col gap-2">
+              {user ? (
+                <div className="pt-3 flex flex-col gap-2.5">
+                  <div className="p-3 bg-slate-50 rounded-2xl border border-slate-200 flex items-center justify-between">
+                    <div className="flex items-center gap-2.5">
+                      <img
+                        src={
+                          user.avatarURL ||
+                          'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=120&q=80'
+                        }
+                        alt={user.name}
+                        className="w-9 h-9 rounded-full object-cover border border-slate-300"
+                      />
+                      <div>
+                        <div className="font-bold text-sm text-slate-900">{user.name}</div>
+                        <div className="text-xs text-slate-500">
+                          {user.verificationStatus === 'verified' ? '✓ Verified Student' : '⏳ Verification Pending'}
+                        </div>
+                      </div>
+                    </div>
                     <Link
-                      to={activePersona === 'driver' ? '/post' : activePersona === 'admin' ? '/admin' : '/search'}
-                      className="text-sm font-medium text-[#5F6964] hover:text-[#18201D]"
+                      to="/verification"
+                      className="text-xs font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200"
                     >
-                      {user.name} ({activePersona.toUpperCase()})
-                    </Link>
-                    {activePersona === 'driver' && (
-                      <Link
-                        to="/post"
-                        className="w-full py-2.5 text-center text-sm font-semibold bg-[#143D32] text-white rounded-lg flex items-center justify-center gap-2"
-                      >
-                        <Car className="w-4 h-4" />
-                        <span>Post a Ride</span>
-                      </Link>
-                    )}
-                    {activePersona === 'passenger' && (
-                      <Link
-                        to="/search"
-                        className="w-full py-2.5 text-center text-sm font-semibold bg-[#143D32] text-white rounded-lg flex items-center justify-center gap-2"
-                      >
-                        <Search className="w-4 h-4" />
-                        <span>Find a Ride</span>
-                      </Link>
-                    )}
-                    {activePersona === 'admin' && (
-                      <Link
-                        to="/admin"
-                        className="w-full py-2.5 text-center text-sm font-semibold bg-emerald-800 text-white rounded-lg flex items-center justify-center gap-2"
-                      >
-                        <ShieldAlert className="w-4 h-4" />
-                        <span>Operations Dashboard</span>
-                      </Link>
-                    )}
-                    <button
-                      onClick={logout}
-                      className="text-sm font-medium text-left text-[#B8473D] hover:underline pt-2"
-                    >
-                      Sign out
-                    </button>
-                  </div>
-                ) : (
-                  <div className="pt-4 border-t border-[#EAE7DF] flex flex-col gap-2">
-                    <Link
-                      to="/auth"
-                      className="w-full py-2.5 text-center text-sm font-semibold border border-[#DDD9CE] rounded-lg text-[#18201D]"
-                    >
-                      Log in
-                    </Link>
-                    <Link
-                      to="/search"
-                      className="w-full py-2.5 text-center text-sm font-semibold bg-[#143D32] text-white rounded-lg"
-                    >
-                      Find a ride
+                      Status
                     </Link>
                   </div>
-                )}
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </motion.header>
-    </>
+
+                  {isDriver && (
+                    <Link
+                      to="/post"
+                      className="w-full py-2.5 text-center text-sm font-semibold bg-[#143D32] text-white rounded-xl flex items-center justify-center gap-2 shadow-xs"
+                    >
+                      <Car className="w-4 h-4" />
+                      <span>Post a Ride</span>
+                    </Link>
+                  )}
+
+                  {isAdmin && (
+                    <Link
+                      to="/admin"
+                      className="w-full py-2.5 text-center text-sm font-semibold bg-amber-600 text-white rounded-xl flex items-center justify-center gap-2 shadow-xs"
+                    >
+                      <ShieldAlert className="w-4 h-4" />
+                      <span>Admin Operations</span>
+                    </Link>
+                  )}
+
+                  <button
+                    onClick={logout}
+                    className="w-full py-2 text-center text-sm font-semibold text-rose-600 hover:bg-rose-50 rounded-xl transition-colors cursor-pointer"
+                  >
+                    Sign out
+                  </button>
+                </div>
+              ) : (
+                <div className="pt-3 border-t border-slate-200 flex flex-col gap-2">
+                  <Link
+                    to="/login"
+                    className="w-full py-2.5 text-center text-sm font-bold border border-slate-300 rounded-xl text-slate-800 hover:bg-slate-50 transition-colors"
+                  >
+                    Log in
+                  </Link>
+                  <Link
+                    to="/register"
+                    className="w-full py-2.5 text-center text-sm font-bold bg-[#143D32] text-white rounded-xl shadow-xs"
+                  >
+                    Sign up
+                  </Link>
+                </div>
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </motion.header>
   );
 };

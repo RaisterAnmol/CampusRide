@@ -64,17 +64,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       if (data?.user) {
         setUser(data.user);
         joinUserRoom(data.user._id);
-        if (data.user.role === 'super_admin' || data.user.role === 'campus_admin') {
+        if (data.user.role === 'super_admin' || data.user.role === 'campus_admin' || data.user.role === 'moderator') {
           setActivePersona('admin');
-        } else if (data.user.name.toLowerCase().includes('aditya')) {
+        } else if (data.user.role === 'driver' || data.user.accountType === 'DRIVER') {
           setActivePersona('driver');
-        } else if (data.user.name.toLowerCase().includes('rahul') || data.user.name.toLowerCase().includes('priya')) {
+        } else {
           setActivePersona('passenger');
         }
       }
     } catch (err) {
       console.warn("[Auth] Failed to refresh user profile:", err);
-      // If token invalid, clear
       localStorage.removeItem("campusride_token");
       setToken(null);
       setUser(null);
@@ -87,8 +86,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     if (token) {
       refreshUser();
     } else {
-      // Auto-login as Aditya Kumar for instant local demo experience
-      switchDemoUser("aditya");
       setLoading(false);
     }
   }, [token]);
@@ -101,6 +98,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       setToken(res.token);
       setUser(res.user);
       joinUserRoom(res.user._id);
+      if (res.user?.role === 'super_admin' || res.user?.role === 'campus_admin' || res.user?.role === 'moderator') {
+        setActivePersona('admin');
+      } else if (res.user?.role === 'driver' || res.user?.accountType === 'DRIVER') {
+        setActivePersona('driver');
+      } else {
+        setActivePersona('passenger');
+      }
     } finally {
       setLoading(false);
     }
@@ -114,6 +118,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       setToken(res.token);
       setUser(res.user);
       joinUserRoom(res.user._id);
+      if (res.user?.role === 'super_admin' || res.user?.role === 'campus_admin' || res.user?.role === 'moderator') {
+        setActivePersona('admin');
+      } else if (res.user?.role === 'driver' || res.user?.accountType === 'DRIVER') {
+        setActivePersona('driver');
+      } else {
+        setActivePersona('passenger');
+      }
     } finally {
       setLoading(false);
     }
@@ -121,6 +132,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const logout = () => {
     localStorage.removeItem("campusride_token");
+    localStorage.removeItem("campusride_persona");
     setToken(null);
     setUser(null);
   };
@@ -130,7 +142,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   ) => {
     const creds = DEMO_USERS[persona];
     if (creds) {
-      setActivePersona(creds.defaultRole);
       await login(creds.email, creds.password);
     }
   };

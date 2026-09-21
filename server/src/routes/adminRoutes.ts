@@ -71,8 +71,13 @@ router.put('/pricing', requireAuth, async (req: AuthenticatedRequest, res: Respo
 });
 
 // GET /api/admin/operations - Main Real-Time Operations & Admin Dashboard Telemetry
-router.get('/operations', requireAuth, async (_req: Request, res: Response): Promise<void> => {
+router.get('/operations', requireAuth, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
+    const userCollege = req.user?.college;
+    const requestedCollege = req.query.college as string;
+    // Strict Scoping: College admins can ONLY view their own college data
+    const targetCollege = userCollege || requestedCollege || null;
+
     const [
       totalRidesCount,
       completedTrips,
@@ -93,17 +98,46 @@ router.get('/operations', requireAuth, async (_req: Request, res: Response): Pro
         .populate('passengerIds', 'name email avatarURL phone college department year semester emergencyContact')
         .populate({
           path: 'rideId',
-          populate: { path: 'vehicleId', select: 'type model plateLast4 capacity' },
+          populate: [
+            { path: 'vehicleId', select: 'type model plateLast4 capacity' },
+            { path: 'creator', select: 'name email college department' }
+          ],
         })
         .sort({ createdAt: -1 }),
       getActivePricing(),
     ]);
 
+    const matchCollege = (collegeName: string | undefined | null, target: string | null) => {
+      if (!target) return true;
+      if (!collegeName) return false;
+      const c = collegeName.toLowerCase().trim();
+      const t = target.toLowerCase().trim();
+      if (!c || !t) return false;
+      return c.includes(t) || t.includes(c);
+    };
+
+    // Apply strict college scoping if targetCollege is active
+    const scopedActiveRides = targetCollege
+      ? allActiveRides.filter((r: any) => matchCollege(r.creator?.college, targetCollege))
+      : allActiveRides;
+
+    const scopedTrips = targetCollege
+      ? allTrips.filter((t: any) => {
+          const driverCol = t.driverId?.college;
+          const rideCreatorCol = t.rideId?.creator?.college;
+          return matchCollege(driverCol, targetCollege) || matchCollege(rideCreatorCol, targetCollege);
+        })
+      : allTrips;
+
+    const scopedCompletedTrips = targetCollege
+      ? completedTrips.filter((t: any) => matchCollege(t.driverId?.college, targetCollege))
+      : completedTrips;
+
     // 1. Calculate Total Platform Revenue & CO2 Saved
     let totalRevenue = 0;
     let totalPassengerKm = 0;
 
-    completedTrips.forEach((trip) => {
+    scopedCompletedTrips.forEach((trip) => {
       const passengerCount = trip.passengerIds ? trip.passengerIds.length : 1;
       const tripDistance = trip.distance || 12;
       totalPassengerKm += tripDistance * Math.max(1, passengerCount);
@@ -116,7 +150,7 @@ router.get('/operations', requireAuth, async (_req: Request, res: Response): Pro
     });
 
     // 2. Fetch accepted requests for active rides
-    const activeRideIds = allActiveRides.map((r) => r._id);
+    const activeRideIds = scopedActiveRides.map((r) => r._id);
     const acceptedRequests = await RideRequest.find({
       rideId: { $in: activeRideIds },
       status: 'accepted',
@@ -136,7 +170,7 @@ router.get('/operations', requireAuth, async (_req: Request, res: Response): Pro
     const seenRideIds = new Set<string>();
 
     // Live trips
-    allTrips.forEach((trip) => {
+    scopedTrips.forEach((trip) => {
       const ride = trip.rideId as any;
       if (!ride) return;
       const rId = ride._id.toString();
@@ -198,7 +232,7 @@ router.get('/operations', requireAuth, async (_req: Request, res: Response): Pro
     });
 
     // Active scheduled rides
-    allActiveRides.forEach((ride) => {
+    scopedActiveRides.forEach((ride) => {
       const rId = ride._id.toString();
       if (seenRideIds.has(rId)) return;
 
@@ -255,9 +289,10 @@ router.get('/operations', requireAuth, async (_req: Request, res: Response): Pro
     const ongoingRidesCount = ongoingRidesList.filter((r) => r.isLiveNow || r.status === 'scheduled').length;
 
     res.status(200).json({
+      adminCollege: targetCollege || 'All Campuses',
       kpis: {
         totalRevenue: Math.max(16800, totalRevenue),
-        totalRides: totalRidesCount,
+        totalRides: targetCollege ? scopedActiveRides.length + scopedCompletedTrips.length : totalRidesCount,
         co2SavedKg: Math.max(215.4, co2SavedKg),
         ongoingRidesCount,
       },

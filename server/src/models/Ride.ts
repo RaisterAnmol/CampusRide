@@ -21,6 +21,10 @@ export interface IRide extends Document {
   pricePerSeat?: number;
   vehicleId?: mongoose.Types.ObjectId;
   status: 'active' | 'cancelled' | 'completed';
+  routePolyline?: string;
+  routeDistanceMeters?: number;
+  routeDurationSeconds?: number;
+  routeSummary?: string;
   recurringSchedule?: IRecurringSchedule;
   createdAt: Date;
   updatedAt: Date;
@@ -67,6 +71,10 @@ const RideSchema = new Schema<IRide>(
       default: 'active',
       index: true,
     },
+    routePolyline: { type: String },
+    routeDistanceMeters: { type: Number },
+    routeDurationSeconds: { type: Number },
+    routeSummary: { type: String },
     recurringSchedule: { type: RecurringScheduleSchema },
   },
   { timestamps: true }

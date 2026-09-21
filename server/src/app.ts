@@ -19,6 +19,7 @@ import placeRoutes from "./routes/placeRoutes";
 import emergencyRoutes from "./routes/emergencyRoutes";
 import mongoose from "mongoose";
 import verificationRoutes from "./routes/verificationRoutes";
+import faceRoutes from "./routes/faceRoutes";
 import notificationRoutes from "./routes/notificationRoutes";
 import auditRoutes from "./routes/auditRoutes";
 import adminRoutes from "./routes/adminRoutes";
@@ -71,20 +72,28 @@ app.use(compression());
 app.use(cookieParser());
 app.use(hpp());
 
-// CORS configuration from env
-const isDev = env.NODE_ENV !== "production";
-const allowedOrigins = isDev
-  ? [env.CLIENT_URL, "http://localhost:5173", "http://127.0.0.1:5173"]
-  : [env.CLIENT_URL];
+// CORS configuration from env & cloud providers (Vercel, Replit)
+const configuredOrigins = (env.CLIENT_URL || "")
+  .split(",")
+  .map((o) => o.trim())
+  .filter(Boolean);
 
-// CORS configuration locked to CLIENT_URL
+const isOriginAllowed = (origin: string | undefined): boolean => {
+  if (!origin) return true; // Mobile apps, curl, or same-origin
+  if (configuredOrigins.includes(origin)) return true;
+  if (origin.includes("localhost") || origin.includes("127.0.0.1")) return true;
+  if (origin.endsWith(".vercel.app") || origin.endsWith(".replit.app") || origin.endsWith(".repl.co")) return true;
+  return false;
+};
+
+// CORS middleware
 app.use(
   cors({
     origin: (origin, callback) => {
-      // Allow requests with no origin (e.g. mobile native, supertest, or same-origin)
-      if (!origin || allowedOrigins.includes(origin)) {
+      if (isOriginAllowed(origin)) {
         callback(null, true);
       } else {
+        logger.warn({ origin }, "Blocked CORS origin request");
         callback(new Error("CORS policy violation: origin not allowed"));
       }
     },
@@ -92,7 +101,8 @@ app.use(
   }),
 );
 
-app.use(express.json({ limit: "100kb" }));
+app.use(express.json({ limit: "15mb" }));
+app.use(express.urlencoded({ extended: true, limit: "15mb" }));
 
 // §2.5 Rate limiting
 // Rate limiters
@@ -221,6 +231,7 @@ app.use("/api/places", placeRoutes);
 app.use("/api", placeRoutes); // for /api/routes/calculate
 app.use("/api/emergency", emergencyRoutes);
 app.use("/api/verification", verificationRoutes);
+app.use("/api/face", faceRoutes);
 app.use("/api/notifications", notificationRoutes);
 app.use("/api/audit", auditRoutes);
 app.use("/api/admin", adminRoutes);

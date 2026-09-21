@@ -2,7 +2,12 @@ import { Router, Response } from "express";
 import mongoose from "mongoose";
 import crypto from "crypto";
 import { Trip, Ride, RideRequest, User, TripLocation } from "../models";
-import { requireAuth, AuthenticatedRequest } from "../middleware/auth";
+import {
+  requireAuth,
+  requireRole,
+  requireVerificationApproved,
+  AuthenticatedRequest,
+} from "../middleware/auth";
 import { getSocketIO } from "../sockets/socketHandler";
 import { haversineDistanceKm } from "../services/matchingEngine";
 import { logAuditEvent } from "../services/auditService";
@@ -28,10 +33,12 @@ function createSecureOtp(): {
   return { otp, otpHash, otpSalt, otpExpiresAt };
 }
 
-// POST /api/trips (Driver starts a trip)
+// POST /api/trips (Driver starts a trip §31)
 router.post(
   "/",
   requireAuth,
+  requireRole("driver"),
+  requireVerificationApproved,
   async (req: AuthenticatedRequest, res: Response): Promise<void> => {
     try {
       const { rideId } = req.body;

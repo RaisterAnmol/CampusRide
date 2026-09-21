@@ -15,6 +15,7 @@ const TripTrackingPage = lazy(() => import('./pages/TripTrackingPage').then(m =>
 const AdminDashboardPage = lazy(() => import('./pages/AdminDashboardPage').then(m => ({ default: m.AdminDashboardPage })));
 const SafetyPage = lazy(() => import('./pages/SafetyPage').then(m => ({ default: m.SafetyPage })));
 const CollegesPage = lazy(() => import('./pages/CollegesPage').then(m => ({ default: m.CollegesPage })));
+const VerificationStatusPage = lazy(() => import('./pages/VerificationStatusPage').then(m => ({ default: m.VerificationStatusPage })));
 
 function RouteFallback() {
   return (
@@ -36,7 +37,12 @@ export default function App() {
               <Routes>
                 <Route path="/" element={<LandingPage />} />
                 <Route path="/auth" element={<AuthPage />} />
+                <Route path="/login" element={<AuthPage />} />
+                <Route path="/signin" element={<AuthPage />} />
+                <Route path="/register" element={<AuthPage />} />
+                <Route path="/signup" element={<AuthPage />} />
                 <Route path="/dashboard" element={<DashboardPage />} />
+                <Route path="/verification" element={<VerificationStatusPage />} />
                 <Route path="/post" element={<PostRidePage />} />
                 <Route path="/post-ride" element={<Navigate to="/post" replace />} />
                 <Route path="/search" element={<SearchRidesPage />} />

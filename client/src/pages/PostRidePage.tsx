@@ -36,17 +36,8 @@ const PRESET_LOCATIONS = [
 ];
 
 export const PostRidePage: React.FC = () => {
-  const { user, switchDemoUser, activePersona } = useAuth();
+  const { user, switchDemoUser } = useAuth();
   const navigate = useNavigate();
-
-  // Strict Persona Redirection: Passengers ONLY search rides, Admins ONLY dashboard
-  useEffect(() => {
-    if (activePersona === 'passenger') {
-      navigate('/search', { replace: true });
-    } else if (activePersona === 'admin') {
-      navigate('/admin', { replace: true });
-    }
-  }, [activePersona, navigate]);
 
   // Wizard state (Steps 1 to 5)
   const [currentStep, setCurrentStep] = useState(1);
@@ -54,6 +45,7 @@ export const PostRidePage: React.FC = () => {
   // Form State
   const [originIndex, setOriginIndex] = useState(0);
   const [destIndex, setDestIndex] = useState(5);
+  const [selectedRoutePolyline, setSelectedRoutePolyline] = useState<[number, number][]>([]);
   const [departureDate, setDepartureDate] = useState(() => {
     const d = new Date();
     d.setHours(d.getHours() + 1);
@@ -75,6 +67,24 @@ export const PostRidePage: React.FC = () => {
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
+  // Load driver vehicle from profile
+  useEffect(() => {
+    async function loadDriverVehicle() {
+      try {
+        const v = await api.getMyVehicle();
+        if (v?.vehicle) {
+          if (v.vehicle.type) setVehicleType(v.vehicle.type);
+          if (v.vehicle.model) setVehicleModel(v.vehicle.model);
+          if (v.vehicle.plateLast4) setPlateLast4(v.vehicle.plateLast4);
+          if (v.vehicle.capacity) setAvailableSeats(Math.max(1, v.vehicle.capacity - 1));
+        }
+      } catch (_) {}
+    }
+    if (user) {
+      loadDriverVehicle();
+    }
+  }, [user]);
 
   const handleNext = () => {
     if (currentStep === 1 && originIndex === destIndex) {
@@ -104,6 +114,7 @@ export const PostRidePage: React.FC = () => {
         departureTime: new Date(departureDate).toISOString(),
         availableSeats,
         pricePerSeat: Math.max(10, pricePerSeat || 10),
+        routePolyline: selectedRoutePolyline.length > 0 ? JSON.stringify(selectedRoutePolyline) : undefined,
         vehicle: {
           type: vehicleType,
           model: vehicleModel,
@@ -132,39 +143,58 @@ export const PostRidePage: React.FC = () => {
     { num: 5, title: "Publish" },
   ];
 
-  // Passenger Persona Guard: Passengers search & book rides, cannot post
-  if (activePersona === 'passenger') {
+  // 1. Not logged in guard
+  if (!user) {
     return (
       <div className="min-h-[75vh] flex items-center justify-center px-4 py-12">
-        <div className="max-w-md w-full bg-white rounded-3xl border border-slate-200 shadow-xl p-8 text-center animate-in fade-in zoom-in-95 duration-200">
+        <div className="max-w-md w-full bg-white rounded-3xl border border-slate-200 shadow-xl p-8 text-center animate-in fade-in">
+          <Car className="w-12 h-12 text-emerald-600 mx-auto mb-4" />
+          <h2 className="text-xl font-bold text-slate-900">Sign in to Publish Rides</h2>
+          <p className="text-xs text-slate-500 mt-2 mb-6">
+            You must be logged in as a verified campus driver to offer seats.
+          </p>
+          <button
+            onClick={() => navigate('/auth')}
+            className="w-full py-3 bg-emerald-600 text-white font-bold rounded-xl text-xs hover:bg-emerald-700 transition-colors"
+          >
+            Go to Sign In
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // 2. Authoritative Server Role Guard: Only Driver role can post rides
+  const isDriver = user.role === 'driver' || user.accountType === 'DRIVER';
+  if (!isDriver) {
+    return (
+      <div className="min-h-[75vh] flex items-center justify-center px-4 py-12">
+        <div className="max-w-md w-full bg-white rounded-3xl border border-slate-200 shadow-xl p-8 text-center animate-in fade-in">
           <div className="w-16 h-16 rounded-2xl bg-blue-50 text-blue-700 flex items-center justify-center mx-auto mb-4 border border-blue-100 shadow-inner">
             <Users className="w-8 h-8 text-blue-600" />
           </div>
           <span className="inline-block px-3 py-1 rounded-full text-[11px] font-mono font-bold bg-blue-100 text-blue-800 uppercase tracking-wider border border-blue-300">
-            Passenger Mode Active
+            Passenger Account Active
           </span>
           <h2 className="text-2xl font-bold text-slate-900 mt-3 tracking-tight">
-            Passengers Search Rides
+            Driver Verification Required
           </h2>
           <p className="text-slate-600 mt-2 text-sm leading-relaxed">
-            You are logged in as <strong>{user?.name || 'Rahul Sharma'}</strong> (Passenger). In passenger mode, you can search and book seats on scheduled peer carpools. Posting a ride requires a verified vehicle driver persona.
+            You are logged in as <strong>{user.name}</strong> (Passenger). In accordance with campus transit bylaws, only verified student drivers with a valid driving license can publish carpool routes.
           </p>
           <div className="mt-6 space-y-2.5">
             <button
-              onClick={() => navigate('/search')}
-              className="w-full py-3 px-4 rounded-xl bg-[#143D32] text-white font-semibold text-sm hover:bg-[#0f2e26] transition-all flex items-center justify-center gap-2 shadow-sm cursor-pointer"
+              onClick={() => navigate('/verification')}
+              className="w-full py-3 px-4 rounded-xl bg-emerald-600 text-white font-semibold text-xs hover:bg-emerald-700 transition-all flex items-center justify-center gap-2 shadow-sm"
             >
-              <Users className="w-4 h-4" />
-              <span>Search Campus Rides</span>
+              <Car className="w-4 h-4" />
+              <span>Apply for Driver Verification</span>
             </button>
             <button
-              onClick={async () => {
-                await switchDemoUser('aditya');
-                navigate('/post');
-              }}
-              className="w-full py-2.5 px-4 rounded-xl border border-slate-200 text-slate-700 font-medium text-xs hover:bg-slate-50 transition-colors flex items-center justify-center gap-2 cursor-pointer"
+              onClick={() => navigate('/search')}
+              className="w-full py-2.5 px-4 rounded-xl border border-slate-200 text-slate-700 font-medium text-xs hover:bg-slate-50 transition-colors flex items-center justify-center gap-2"
             >
-              <span>Switch to Driver Mode (Aditya Kumar)</span>
+              <span>Search Available Rides</span>
             </button>
           </div>
         </div>
@@ -172,39 +202,35 @@ export const PostRidePage: React.FC = () => {
     );
   }
 
-  // Admin Persona Guard: Admin oversees operations, cannot post rides
-  if (activePersona === 'admin') {
+  // 3. Verification Approval Guard: Driver must be verified by admin
+  if (user.verificationStatus !== 'verified') {
     return (
       <div className="min-h-[75vh] flex items-center justify-center px-4 py-12">
-        <div className="max-w-md w-full bg-white rounded-3xl border border-slate-200 shadow-xl p-8 text-center animate-in fade-in zoom-in-95 duration-200">
+        <div className="max-w-md w-full bg-white rounded-3xl border border-slate-200 shadow-xl p-8 text-center animate-in fade-in">
           <div className="w-16 h-16 rounded-2xl bg-amber-50 text-amber-700 flex items-center justify-center mx-auto mb-4 border border-amber-100 shadow-inner">
             <Shield className="w-8 h-8 text-amber-600" />
           </div>
           <span className="inline-block px-3 py-1 rounded-full text-[11px] font-mono font-bold bg-amber-100 text-amber-800 uppercase tracking-wider border border-amber-300">
-            Admin Mode Active
+            Driver Verification {user.verificationStatus.toUpperCase()}
           </span>
           <h2 className="text-2xl font-bold text-slate-900 mt-3 tracking-tight">
-            Security & Operations Center
+            Pending Campus ID Approval
           </h2>
           <p className="text-slate-600 mt-2 text-sm leading-relaxed">
-            You are logged in as <strong>Campus Administrator</strong>. Administrators oversee live rides, revenue, pricing benchmarks, and safety audits from the Operations Dashboard.
+            Your driver application and vehicle credentials are currently <strong>{user.verificationStatus}</strong> with the {user.college} Safety Office. Once verified, you will be authorized to publish rides.
           </p>
           <div className="mt-6 space-y-2.5">
             <button
-              onClick={() => navigate('/admin')}
-              className="w-full py-3 px-4 rounded-xl bg-[#143D32] text-white font-semibold text-sm hover:bg-[#0f2e26] transition-all flex items-center justify-center gap-2 shadow-sm cursor-pointer"
+              onClick={() => navigate('/verification')}
+              className="w-full py-3 px-4 rounded-xl bg-emerald-600 text-white font-semibold text-xs hover:bg-emerald-700 transition-all flex items-center justify-center gap-2 shadow-sm"
             >
-              <Shield className="w-4 h-4" />
-              <span>Open Admin Dashboard</span>
+              <span>View Verification Status & Documents</span>
             </button>
             <button
-              onClick={async () => {
-                await switchDemoUser('aditya');
-                navigate('/post');
-              }}
-              className="w-full py-2.5 px-4 rounded-xl border border-slate-200 text-slate-700 font-medium text-xs hover:bg-slate-50 transition-colors flex items-center justify-center gap-2 cursor-pointer"
+              onClick={() => navigate('/dashboard')}
+              className="w-full py-2.5 px-4 rounded-xl border border-slate-200 text-slate-700 font-medium text-xs hover:bg-slate-50 transition-colors"
             >
-              <span>Switch to Driver Mode (Aditya Kumar)</span>
+              <span>Return to Dashboard</span>
             </button>
           </div>
         </div>
@@ -349,6 +375,9 @@ export const PostRidePage: React.FC = () => {
                         newDest.toLowerCase().includes(p.text.toLowerCase())
                     );
                     if (idx !== -1) setDestIndex(idx);
+                  }}
+                  onSelectRoute={(route) => {
+                    setSelectedRoutePolyline(route.latLngs);
                   }}
                 />
               </div>

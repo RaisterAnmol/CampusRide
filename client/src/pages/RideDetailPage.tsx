@@ -42,7 +42,10 @@ export const RideDetailPage: React.FC = () => {
     if (!id) return;
     try {
       setLoading(true);
-      const rideData = await api.getRideById(id);
+      let rideData = await api.getRideById(id);
+      if (Array.isArray(rideData)) {
+        rideData = rideData.length > 0 ? rideData[0] : null;
+      }
       setRide(rideData);
 
       joinRideRoom(id);
@@ -58,13 +61,17 @@ export const RideDetailPage: React.FC = () => {
       }
 
       // If user is driver, fetch incoming requests
-      if (rideData.creator?._id === user?._id) {
+      if (rideData?.creator?._id === user?._id) {
         const reqs = await api.getRequests("driver", id);
-        setRequests(reqs || []);
+        const localReqs = JSON.parse(localStorage.getItem("campusride_local_requests") || "[]");
+        const matchingLocal = localReqs.filter((r: any) => r.rideId === id);
+        setRequests([...(reqs || []), ...matchingLocal]);
       } else {
-        // Passenger: check if already requested
+        // Passenger: check if already requested from server + localStorage
         const reqs = await api.getRequests("passenger", id);
-        setRequests(reqs || []);
+        const localReqs = JSON.parse(localStorage.getItem("campusride_local_requests") || "[]");
+        const matchingLocal = localReqs.filter((r: any) => r.rideId === id);
+        setRequests([...(reqs || []), ...matchingLocal]);
       }
     } catch (err: any) {
       setError(err.message || "Failed to load ride");
@@ -112,6 +119,16 @@ export const RideDetailPage: React.FC = () => {
     setError("");
     try {
       await api.requestRide(id);
+      // Persist in localStorage directly for seamless Vercel / offline mode
+      const localReqs = JSON.parse(localStorage.getItem("campusride_local_requests") || "[]");
+      const newReq = {
+        _id: "req_" + Date.now(),
+        rideId: id,
+        passengerId: user || { _id: "usr_guest", name: "Student Passenger" },
+        status: "pending",
+        createdAt: new Date().toISOString(),
+      };
+      localStorage.setItem("campusride_local_requests", JSON.stringify([newReq, ...localReqs]));
       setSuccessMsg("Seat request submitted! Awaiting driver confirmation.");
       loadData();
     } catch (err: any) {
@@ -161,22 +178,28 @@ export const RideDetailPage: React.FC = () => {
     );
   }
 
-  if (!ride) {
+  if (!ride || !ride.origin) {
     return (
       <div className="max-w-2xl mx-auto py-12 px-4 text-center">
         <AlertCircle className="w-10 h-10 text-red-500 mx-auto mb-2" />
         <h2 className="text-lg font-bold text-slate-900">Ride not found</h2>
+        <p className="text-xs text-slate-500 mt-1">This commute may have departed, been completed, or is temporarily unavailable.</p>
         <button
-          onClick={() => navigate("/dashboard")}
-          className="mt-4 px-4 py-2 bg-slate-800 text-white rounded-xl text-xs font-semibold"
+          onClick={() => navigate("/search")}
+          className="mt-4 px-4 py-2 bg-emerald-600 text-white rounded-xl text-xs font-semibold hover:bg-emerald-700"
         >
-          Return to Dashboard
+          Return to Ride Search
         </button>
       </div>
     );
   }
 
-  const myRequest = requests.find((r) => r.passengerId?._id === user?._id);
+  const myRequest = requests.find(
+    (r) =>
+      r.rideId === id ||
+      (user?._id && (r.passengerId?._id === user._id || (r.passengerId as any)?.id === user._id)) ||
+      (user?.email && r.passengerId?.email === user.email)
+  );
 
   return (
     <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
@@ -376,15 +399,16 @@ export const RideDetailPage: React.FC = () => {
               {myRequest ? (
                 <div className="flex items-center gap-2">
                   <span
-                    className={`px-3 py-1.5 rounded-xl text-xs font-bold uppercase ${
+                    className={`px-3.5 py-2 rounded-xl text-xs font-bold uppercase flex items-center gap-1.5 ${
                       myRequest.status === "accepted"
-                        ? "bg-emerald-100 text-emerald-800"
+                        ? "bg-emerald-100 text-emerald-800 border border-emerald-300"
                         : myRequest.status === "pending"
-                          ? "bg-amber-100 text-amber-800"
+                          ? "bg-amber-100 text-amber-800 border border-amber-300"
                           : "bg-slate-200 text-slate-700"
                     }`}
                   >
-                    Request: {myRequest.status}
+                    <CheckCircle2 className="w-4 h-4 text-amber-600 shrink-0" />
+                    <span>Request Sent ({myRequest.status})</span>
                   </span>
                   {myRequest.status === "accepted" && (
                     <button

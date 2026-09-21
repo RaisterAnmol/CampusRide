@@ -99,24 +99,19 @@ export const Hero: React.FC = () => {
         <div className="hero-badge inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-white text-slate-800 text-xs font-mono tracking-wider uppercase mb-8 border border-slate-200 shadow-sm">
           <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
           <span>CampusRide · University Commute Network</span>
-          {activePersona === 'driver' && (
+          {user ? (
             <span className="bg-emerald-600 text-white px-2.5 py-0.5 rounded-full font-bold ml-1 text-[11px] shadow-xs">
-              🚗 DRIVER ROLE
+              {user.role === 'driver' || user.accountType === 'DRIVER'
+                ? '🚗 VERIFIED DRIVER'
+                : user.role === 'super_admin' || user.role === 'campus_admin'
+                ? '🏛️ CAMPUS ADMIN'
+                : user.accountType === 'WOMEN_PASSENGER'
+                ? '🛡️ WOMEN-ONLY STUDENT'
+                : '🎒 VERIFIED STUDENT'}
             </span>
-          )}
-          {activePersona === 'passenger' && user?.gender === 'female' && (
-            <span className="bg-pink-600 text-white px-2.5 py-0.5 rounded-full font-bold ml-1 text-[11px] shadow-xs">
-              🛡️ WOMEN-ONLY ROLE
-            </span>
-          )}
-          {activePersona === 'passenger' && user?.gender !== 'female' && (
-            <span className="bg-sky-600 text-white px-2.5 py-0.5 rounded-full font-bold ml-1 text-[11px] shadow-xs">
-              🎒 PASSENGER ROLE
-            </span>
-          )}
-          {activePersona === 'admin' && (
-            <span className="bg-amber-600 text-white px-2.5 py-0.5 rounded-full font-bold ml-1 text-[11px] shadow-xs">
-              🏛️ ADMIN ROLE
+          ) : (
+            <span className="bg-emerald-100 text-emerald-800 px-2.5 py-0.5 rounded-full font-bold ml-1 text-[11px]">
+              🔒 100% VERIFIED UNIVERSITY PEERS
             </span>
           )}
         </div>
@@ -128,9 +123,9 @@ export const Hero: React.FC = () => {
         >
           <span className="hero-line block">Your daily campus commute,</span>
           <span className="hero-line block text-[#143D32]">
-            {activePersona === 'driver'
+            {user?.role === 'driver' || user?.accountType === 'DRIVER'
               ? 'share your seats & save fuel.'
-              : activePersona === 'admin'
+              : user?.role === 'super_admin' || user?.role === 'campus_admin'
               ? 'managed with campus-wide safety.'
               : 'shared with peers you trust.'}
           </span>
@@ -138,121 +133,150 @@ export const Hero: React.FC = () => {
 
         {/* Supporting Copy */}
         <p className="hero-sub mt-6 text-lg sm:text-xl text-slate-600 max-w-2xl mx-auto font-normal leading-relaxed">
-          {activePersona === 'driver'
+          {user?.role === 'driver' || user?.accountType === 'DRIVER'
             ? 'Offer empty car/bike seats along your university route. Share commute expenses with verified student peers.'
-            : activePersona === 'admin'
+            : user?.role === 'super_admin' || user?.role === 'campus_admin'
             ? 'Real-time university operations: live passenger tracking, incident monitoring, and campus mobility fare governance.'
             : 'Direct rides with university peers heading your direction. Verified college IDs, zero commercial surge, and scheduled carpools.'}
         </p>
 
-        {/* CTA Buttons - Strictly Persona Separated */}
+        {/* CTA Buttons */}
         <div className="hero-cta mt-8 flex flex-wrap items-center justify-center gap-3.5">
-          {activePersona === 'driver' && (
+          {user?.role === 'driver' || user?.accountType === 'DRIVER' ? (
             <>
               <Link
                 to="/post"
-                className="px-6 py-3.5 rounded-lg bg-[#143D32] hover:bg-[#0f2e26] text-white font-medium text-sm transition-all shadow-sm hover:shadow flex items-center gap-2 group"
+                className="px-6 py-3.5 rounded-xl bg-[#143D32] hover:bg-[#0f2e26] text-white font-medium text-sm transition-all shadow-sm hover:shadow flex items-center gap-2 group"
               >
                 <Car className="w-4 h-4 text-emerald-300" />
                 <span>Post a Ride Now</span>
                 <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
               </Link>
               <Link
-                to="/dashboard"
-                className="px-6 py-3.5 rounded-lg bg-white hover:bg-slate-50 text-slate-900 font-medium text-sm border border-slate-200 transition-all flex items-center gap-2"
+                to="/search"
+                className="px-6 py-3.5 rounded-xl bg-white hover:bg-slate-50 text-slate-900 font-medium text-sm border border-slate-200 transition-all flex items-center gap-2"
               >
-                <span>Driver Dashboard</span>
+                <Search className="w-4 h-4 text-slate-600" />
+                <span>Browse Campus Rides</span>
+              </Link>
+            </>
+          ) : user?.role === 'super_admin' || user?.role === 'campus_admin' ? (
+            <>
+              <Link
+                to="/admin"
+                className="px-6 py-3.5 rounded-xl bg-[#143D32] hover:bg-[#0f2e26] text-white font-medium text-sm transition-all shadow-sm hover:shadow flex items-center gap-2 group"
+              >
+                <ShieldCheck className="w-4 h-4 text-emerald-300" />
+                <span>Open Admin Dashboard</span>
+                <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+              </Link>
+              <Link
+                to="/search"
+                className="px-6 py-3.5 rounded-xl bg-white hover:bg-slate-50 text-slate-900 font-medium text-sm border border-slate-200 transition-all flex items-center gap-2"
+              >
+                <span>Live Route Monitor</span>
+              </Link>
+            </>
+          ) : user ? (
+            <>
+              <Link
+                to="/search"
+                className="px-6 py-3.5 rounded-xl bg-[#143D32] hover:bg-[#0f2e26] text-white font-medium text-sm transition-all shadow-sm hover:shadow flex items-center gap-2 group"
+              >
+                <Search className="w-4 h-4" />
+                <span>Find a Ride</span>
+                <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+              </Link>
+              <Link
+                to="/post"
+                className="px-6 py-3.5 rounded-xl bg-white hover:bg-slate-50 text-slate-900 font-medium text-sm border border-slate-200 transition-all flex items-center gap-2"
+              >
+                <Car className="w-4 h-4 text-slate-600" />
+                <span>Offer a Ride</span>
+              </Link>
+            </>
+          ) : (
+            <>
+              <Link
+                to="/search"
+                className="px-6 py-3.5 rounded-xl bg-[#143D32] hover:bg-[#0f2e26] text-white font-medium text-sm transition-all shadow-sm hover:shadow flex items-center gap-2 group"
+              >
+                <Search className="w-4 h-4" />
+                <span>Find a Ride</span>
+                <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+              </Link>
+              <Link
+                to="/login"
+                className="px-6 py-3.5 rounded-xl bg-white hover:bg-slate-50 text-slate-900 font-medium text-sm border border-slate-200 transition-all flex items-center gap-2"
+              >
+                <span>Log In / Sign Up</span>
               </Link>
             </>
           )}
-
-          {activePersona === 'passenger' && (
-            <Link
-              to="/search"
-              className="px-6 py-3.5 rounded-lg bg-[#143D32] hover:bg-[#0f2e26] text-white font-medium text-sm transition-all shadow-sm hover:shadow flex items-center gap-2 group"
-            >
-              <Search className="w-4 h-4" />
-              <span>Find a Ride</span>
-              <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-            </Link>
-          )}
-
-          {activePersona === 'admin' && (
-            <Link
-              to="/admin"
-              className="px-6 py-3.5 rounded-lg bg-[#143D32] hover:bg-[#0f2e26] text-white font-medium text-sm transition-all shadow-sm hover:shadow flex items-center gap-2 group"
-            >
-              <ShieldCheck className="w-4 h-4 text-emerald-300" />
-              <span>Open Admin Dashboard</span>
-              <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-            </Link>
-          )}
         </div>
 
-        {/* Corridor Quick Search Bar - Passenger Only */}
-        {activePersona === 'passenger' && (
-          <div className="hero-search mt-10 w-full max-w-3xl">
-            <form
-              onSubmit={handleSearch}
-              className="bg-white p-2.5 rounded-xl border border-slate-200 shadow-sm flex flex-col md:flex-row items-stretch gap-2"
+        {/* Corridor Quick Search Bar - Available to All Users */}
+        <div className="hero-search mt-10 w-full max-w-3xl">
+          <form
+            onSubmit={handleSearch}
+            className="bg-white p-2.5 rounded-xl border border-slate-200 shadow-sm flex flex-col md:flex-row items-stretch gap-2"
+          >
+            <div className="flex-1 flex items-center gap-2.5 px-3 py-2 rounded-lg bg-slate-50 border border-slate-200 focus-within:border-[#143D32] focus-within:bg-white transition-colors">
+              <MapPin className="w-4 h-4 text-[#143D32] shrink-0" />
+              <div className="flex-1 text-left">
+                <label className="block text-[10px] font-mono uppercase text-slate-500">
+                  From
+                </label>
+                <input
+                  type="text"
+                  value={from}
+                  onChange={(e) => setFrom(e.target.value)}
+                  placeholder="Pickup area (e.g. Selaqui Hub)"
+                  className="w-full bg-transparent text-sm text-slate-900 focus:outline-none"
+                />
+              </div>
+            </div>
+
+            <div className="flex-1 flex items-center gap-2.5 px-3 py-2 rounded-lg bg-slate-50 border border-slate-200 focus-within:border-[#143D32] focus-within:bg-white transition-colors">
+              <MapPin className="w-4 h-4 text-emerald-600 shrink-0" />
+              <div className="flex-1 text-left">
+                <label className="block text-[10px] font-mono uppercase text-slate-500">
+                  To Campus
+                </label>
+                <input
+                  type="text"
+                  value={to}
+                  onChange={(e) => setTo(e.target.value)}
+                  placeholder="Campus gate (e.g. Uttaranchal University Gate 1)"
+                  className="w-full bg-transparent text-sm text-slate-900 focus:outline-none"
+                />
+              </div>
+            </div>
+
+            <div className="w-full md:w-36 flex items-center gap-2.5 px-3 py-2 rounded-lg bg-slate-50 border border-slate-200">
+              <Calendar className="w-4 h-4 text-slate-400 shrink-0" />
+              <div className="flex-1 text-left">
+                <label className="block text-[10px] font-mono uppercase text-slate-500">
+                  Date
+                </label>
+                <input
+                  type="date"
+                  value={date}
+                  onChange={(e) => setDate(e.target.value)}
+                  className="w-full bg-transparent text-xs font-mono text-slate-900 focus:outline-none"
+                />
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              className="px-5 py-2.5 rounded-lg bg-[#143D32] hover:bg-[#0f2e26] text-white font-medium text-sm transition-all flex items-center justify-center gap-2 shadow-sm shrink-0 cursor-pointer"
             >
-              <div className="flex-1 flex items-center gap-2.5 px-3 py-2 rounded-lg bg-slate-50 border border-slate-200 focus-within:border-[#143D32] focus-within:bg-white transition-colors">
-                <MapPin className="w-4 h-4 text-[#143D32] shrink-0" />
-                <div className="flex-1 text-left">
-                  <label className="block text-[10px] font-mono uppercase text-slate-500">
-                    From
-                  </label>
-                  <input
-                    type="text"
-                    value={from}
-                    onChange={(e) => setFrom(e.target.value)}
-                    placeholder="Pickup area (e.g. Selaqui Hub)"
-                    className="w-full bg-transparent text-sm text-slate-900 focus:outline-none"
-                  />
-                </div>
-              </div>
-
-              <div className="flex-1 flex items-center gap-2.5 px-3 py-2 rounded-lg bg-slate-50 border border-slate-200 focus-within:border-[#143D32] focus-within:bg-white transition-colors">
-                <MapPin className="w-4 h-4 text-emerald-600 shrink-0" />
-                <div className="flex-1 text-left">
-                  <label className="block text-[10px] font-mono uppercase text-slate-500">
-                    To Campus
-                  </label>
-                  <input
-                    type="text"
-                    value={to}
-                    onChange={(e) => setTo(e.target.value)}
-                    placeholder="Campus gate (e.g. Uttaranchal University Gate 1)"
-                    className="w-full bg-transparent text-sm text-slate-900 focus:outline-none"
-                  />
-                </div>
-              </div>
-
-              <div className="w-full md:w-36 flex items-center gap-2.5 px-3 py-2 rounded-lg bg-slate-50 border border-slate-200">
-                <Calendar className="w-4 h-4 text-slate-400 shrink-0" />
-                <div className="flex-1 text-left">
-                  <label className="block text-[10px] font-mono uppercase text-slate-500">
-                    Date
-                  </label>
-                  <input
-                    type="date"
-                    value={date}
-                    onChange={(e) => setDate(e.target.value)}
-                    className="w-full bg-transparent text-xs font-mono text-slate-900 focus:outline-none"
-                  />
-                </div>
-              </div>
-
-              <button
-                type="submit"
-                className="px-5 py-2.5 rounded-lg bg-[#143D32] hover:bg-[#0f2e26] text-white font-medium text-sm transition-all flex items-center justify-center gap-2 shadow-sm shrink-0"
-              >
-                <Search className="w-4 h-4" />
-                <span>Search</span>
-              </button>
-            </form>
-          </div>
-        )}
+              <Search className="w-4 h-4" />
+              <span>Search</span>
+            </button>
+          </form>
+        </div>
       </div>
 
       {/* Hero Schematic Corridor Display */}

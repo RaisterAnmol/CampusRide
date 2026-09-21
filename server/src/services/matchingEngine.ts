@@ -183,8 +183,8 @@ export function calculateMatchScore(
     ? haversineDistanceKm(driverRide.destination, passengerQuery.destination)
     : 0;
 
-  // Strict Corridor Match: If driver pickup or destination is > 2.5 km from passenger points, strictly disqualify
-  if (pickupDist > 2.5 || (passengerQuery.destination && destDist > 2.5)) {
+  // Strict Corridor Match: If driver pickup or destination is > 1.2 km from passenger points, strictly disqualify
+  if (pickupDist > 1.2 || (passengerQuery.destination && destDist > 1.2)) {
     return {
       isMatch: false,
       matchScore: 0,

@@ -22,10 +22,13 @@ export interface IUser {
   semester?: number;
   phone?: string;
   avatarURL?: string;
-  role?: 'student' | 'moderator' | 'campus_admin' | 'super_admin';
+  role?: 'student' | 'driver' | 'moderator' | 'campus_admin' | 'super_admin';
+  accountType?: 'PASSENGER' | 'WOMEN_PASSENGER' | 'DRIVER' | 'ADMIN';
   institutionId?: string;
   campusId?: string;
   verificationStatus: 'unverified' | 'pending' | 'verified' | 'rejected';
+  faceEnrollmentStatus?: 'NOT_STARTED' | 'PENDING' | 'ENROLLED' | 'DISABLED';
+  faceVerificationEnabled?: boolean;
   rating: number;
   totalRides: number;
   gender?: 'male' | 'female' | 'other';
@@ -91,6 +94,7 @@ export interface IRide {
   vehicleId?: IVehicle;
   status: 'active' | 'cancelled' | 'completed';
   match?: IMatchResult;
+  routePolyline?: string;
   createdAt: string;
 }
 
