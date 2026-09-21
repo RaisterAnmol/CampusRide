@@ -15,12 +15,13 @@ export function maskMongoUri(rawUri: string): string {
 export async function connectDB(): Promise<typeof mongoose> {
   const uri = process.env.MONGODB_URI;
 
-  if (process.env.NODE_ENV === "production") {
-    if (!uri || uri.trim().length === 0) {
-      const errMsg = "FATAL: MONGODB_URI is required in production. In-memory database fallback is strictly disabled in production.";
-      logger.error(errMsg);
-      throw new Error(errMsg);
-    }
+  if (process.env.NODE_ENV === "production" && (!uri || uri.trim().length === 0)) {
+    console.warn(
+      "[Database] WARNING: MONGODB_URI is not set. Falling back to in-memory database with pre-seeded campus data. To persist data across restarts, set MONGODB_URI in Replit Secrets.",
+    );
+    logger.warn(
+      "[Database] MONGODB_URI not set in production. Falling back to in-memory engine.",
+    );
   }
 
   if (uri && uri.trim().length > 0) {
