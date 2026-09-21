@@ -27,6 +27,8 @@ export interface IUser {
   institutionId?: string;
   campusId?: string;
   verificationStatus: 'unverified' | 'pending' | 'verified' | 'rejected';
+  enrolledIdCardUrl?: string;
+  lastDailyIdCheckDate?: string;
   faceEnrollmentStatus?: 'NOT_STARTED' | 'PENDING' | 'ENROLLED' | 'DISABLED';
   faceVerificationEnabled?: boolean;
   rating: number;

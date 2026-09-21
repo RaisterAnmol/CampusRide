@@ -44,3 +44,7 @@ Thumbs.db
 
 # Sensitive credentials
 DEMO_CREDENTIALS.md
+
+# Uploads
+server/uploads/verification/daily-*
+server/uploads/verification/temp-*

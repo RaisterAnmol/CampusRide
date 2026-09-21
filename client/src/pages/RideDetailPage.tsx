@@ -5,6 +5,7 @@ import { api } from "../services/api";
 import { IRide, IRideRequest, ITrip } from "../types";
 import { getSocket, joinRideRoom } from "../services/socket";
 import { ChatModal } from "../components/ChatModal";
+import { DailyDriverIdCheckModal } from "../components/verification/DailyDriverIdCheckModal";
 import { PickupAndRouteNavigationMap } from "../components/map/PickupAndRouteNavigationMap";
 import {
   Car,
@@ -35,6 +36,7 @@ export const RideDetailPage: React.FC = () => {
   const [actionLoading, setActionLoading] = useState(false);
   const [error, setError] = useState("");
   const [successMsg, setSuccessMsg] = useState("");
+  const [showDailyIdModal, setShowDailyIdModal] = useState(false);
 
   const isDriver = ride?.creator?._id === user?._id;
 
@@ -155,7 +157,7 @@ export const RideDetailPage: React.FC = () => {
     }
   };
 
-  const handleStartTrip = async () => {
+  const executeStartTrip = async () => {
     if (!id) return;
     setActionLoading(true);
     setError("");
@@ -167,6 +169,21 @@ export const RideDetailPage: React.FC = () => {
     } finally {
       setActionLoading(false);
     }
+  };
+
+  const handleStartTrip = () => {
+    const todayStr = new Date().toISOString().slice(0, 10);
+    const isDailyVerified =
+      (user as any)?.lastDailyIdCheckDate === todayStr ||
+      localStorage.getItem("campusride_daily_id_verified_" + user?._id) === todayStr ||
+      localStorage.getItem("campusride_driver_verified_date") === todayStr;
+
+    if (!isDailyVerified) {
+      setShowDailyIdModal(true);
+      return;
+    }
+
+    executeStartTrip();
   };
 
   if (loading) {
@@ -561,6 +578,20 @@ export const RideDetailPage: React.FC = () => {
           rideId={ride._id}
           onClose={() => setShowChat(false)}
           title={`Ride Chat: ${ride.origin.text} → ${ride.destination.text}`}
+        />
+      )}
+
+      {/* Mandatory Daily Driver Student ID Card Verification Modal */}
+      {showDailyIdModal && user && (
+        <DailyDriverIdCheckModal
+          isOpen={showDailyIdModal}
+          onClose={() => setShowDailyIdModal(false)}
+          user={user}
+          rideId={id}
+          onVerified={() => {
+            setShowDailyIdModal(false);
+            executeStartTrip();
+          }}
         />
       )}
     </div>

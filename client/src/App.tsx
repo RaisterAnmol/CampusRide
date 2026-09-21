@@ -1,6 +1,6 @@
 import React, { lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { AuthProvider } from './context/AuthContext';
+import { AuthProvider, useAuth } from './context/AuthContext';
 import { Navbar } from './components/Navbar';
 import { CustomCursor } from './components/common/CustomCursor';
 import { LandingPage } from './pages/LandingPage';
@@ -25,6 +25,15 @@ function RouteFallback() {
   );
 }
 
+function RootGateway() {
+  const { user, loading } = useAuth();
+  if (loading) return <RouteFallback />;
+  if (!user) {
+    return <AuthPage />;
+  }
+  return <LandingPage />;
+}
+
 export default function App() {
   return (
     <AuthProvider>
@@ -35,7 +44,7 @@ export default function App() {
           <main className="flex-1">
             <Suspense fallback={<RouteFallback />}>
               <Routes>
-                <Route path="/" element={<LandingPage />} />
+                <Route path="/" element={<RootGateway />} />
                 <Route path="/auth" element={<AuthPage />} />
                 <Route path="/login" element={<AuthPage />} />
                 <Route path="/signin" element={<AuthPage />} />

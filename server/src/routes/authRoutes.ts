@@ -57,6 +57,7 @@ const registerSchema = z.object({
     .default("PASSENGER"),
   studentIdentifier: z.string().trim().optional(),
   driverIdentifier: z.string().trim().optional(),
+  enrolledIdCardUrl: z.string().optional(),
   adminInvitationToken: z.string().trim().optional(),
   vehicle: z
     .object({
@@ -99,6 +100,7 @@ router.post("/register", async (req, res): Promise<void> => {
       accountType,
       studentIdentifier,
       driverIdentifier,
+      enrolledIdCardUrl,
       adminInvitationToken,
       vehicle,
     } = parseResult.data;
@@ -150,6 +152,8 @@ router.post("/register", async (req, res): Promise<void> => {
       role: assignedRole,
       accountType,
       verificationStatus: "pending",
+      enrolledIdCardUrl: enrolledIdCardUrl || "",
+      lastDailyIdCheckDate: "",
       faceEnrollmentStatus: "NOT_STARTED",
       faceVerificationEnabled: false,
       rating: 5.0,
@@ -296,6 +300,8 @@ router.post("/login", async (req, res): Promise<void> => {
         faceVerificationEnabled: user.faceVerificationEnabled,
         institutionId: user.institutionId,
         campusId: user.campusId,
+        enrolledIdCardUrl: user.enrolledIdCardUrl || "",
+        lastDailyIdCheckDate: user.lastDailyIdCheckDate || "",
         isEmailVerified: user.isEmailVerified,
         isPhoneVerified: user.isPhoneVerified,
       },

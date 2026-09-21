@@ -391,8 +391,19 @@ function getLocalDemoFallback<T>(endpoint: string, options: RequestInit): T | un
       return DEMO_FALLBACK_HUBS as T;
     }
 
-    if (path.includes("/audit/logs")) {
-      return DEMO_FALLBACK_AUDIT_LOGS as T;
+    if (path.includes("/daily-driver-check") && options.method === "POST") {
+      const today = new Date().toISOString().slice(0, 10);
+      const savedEmail = localStorage.getItem("campusride_user_email") || "aditya.kumar@college.edu";
+      const user = DEMO_FALLBACK_USERS[savedEmail] || DEMO_FALLBACK_USERS["aditya.kumar@college.edu"];
+      localStorage.setItem("campusride_daily_id_verified_" + user._id, today);
+      localStorage.setItem("campusride_driver_verified_date", today);
+      return {
+        success: true,
+        verified: true,
+        date: today,
+        matchScore: 98.4,
+        message: `Driver ID card authenticated for today's campus carpools!`,
+      } as T;
     }
 
     // Default safe empty array / object for any unknown endpoint
@@ -795,6 +806,29 @@ class ApiService {
       method: "POST",
       body: JSON.stringify({ embedding, tripId }),
     });
+  }
+
+  // Daily Driver Physical ID Card Verification
+  async verifyDailyDriverId(payload: { capturedImageBase64?: string; capturedImage?: File; rideId?: string }) {
+    if (payload.capturedImage) {
+      const fd = new FormData();
+      fd.append("capturedImage", payload.capturedImage);
+      if (payload.rideId) fd.append("rideId", payload.rideId);
+      return this.request<{ success: boolean; verified: boolean; date: string; matchScore: number; message: string }>(
+        "/api/verification/daily-driver-check",
+        {
+          method: "POST",
+          body: fd,
+        }
+      );
+    }
+    return this.request<{ success: boolean; verified: boolean; date: string; matchScore: number; message: string }>(
+      "/api/verification/daily-driver-check",
+      {
+        method: "POST",
+        body: JSON.stringify(payload),
+      }
+    );
   }
 
   // Maps, Routes & Pickup Hubs

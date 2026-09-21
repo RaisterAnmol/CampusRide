@@ -20,6 +20,7 @@ import {
   Sparkles,
   Key,
   X,
+  Upload,
   Loader2,
 } from "lucide-react";
 
@@ -69,6 +70,25 @@ export const AuthPage: React.FC = () => {
   const [vehicleModel, setVehicleModel] = useState("Honda City");
   const [plateLast4, setPlateLast4] = useState("4821");
   const [capacity, setCapacity] = useState(3);
+  const [idCardFile, setIdCardFile] = useState<File | null>(null);
+  const [idCardPreview, setIdCardPreview] = useState<string | null>(null);
+
+  const handleIdCardFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setIdCardFile(file);
+      const reader = new FileReader();
+      reader.onload = () => {
+        setIdCardPreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleUseSampleIdCard = () => {
+    const sampleCard = "https://images.unsplash.com/photo-1544717305-2782549b5136?auto=format&fit=crop&w=600&q=80";
+    setIdCardPreview(sampleCard);
+  };
 
   // Admin-specific fields
   const [adminToken, setAdminToken] = useState("");
@@ -119,12 +139,14 @@ export const AuthPage: React.FC = () => {
 
         if (accountType === "DRIVER") {
           payload.driverIdentifier = driverIdentifier;
+          payload.enrolledIdCardUrl = idCardPreview || "https://images.unsplash.com/photo-1544717305-2782549b5136?auto=format&fit=crop&w=600&q=80";
           payload.vehicle = {
             type: vehicleType,
             model: vehicleModel,
             capacity,
             plateLast4,
           };
+          localStorage.setItem("campusride_driver_id_card_" + email.toLowerCase().trim(), payload.enrolledIdCardUrl);
         }
 
         if (accountType === "ADMIN") {
@@ -608,6 +630,72 @@ export const AuthPage: React.FC = () => {
                           className="w-full text-sm px-3 py-2 rounded-xl border border-slate-300 focus:ring-2 focus:ring-amber-500 focus:outline-none font-mono uppercase"
                         />
                       </div>
+                    </div>
+
+                    {/* Student ID Card (Baseline Reference for Daily Verification) */}
+                    <div className="pt-3 border-t border-amber-200/80">
+                      <div className="flex items-center justify-between mb-1.5">
+                        <label className="block text-xs font-bold text-amber-950 flex items-center gap-1.5">
+                          <GraduationCap className="w-4 h-4 text-amber-700" />
+                          <span>Student College ID Card (Mandatory Baseline) *</span>
+                        </label>
+                        <span className="text-[10px] font-bold text-amber-800 uppercase px-2 py-0.5 rounded bg-amber-100 border border-amber-300">
+                          Required
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-amber-800/90 mb-2.5">
+                        Upload or snap a photo of your College ID. Every day before your first ride, you will authenticate against this card to protect campus commuters.
+                      </p>
+
+                      {idCardPreview ? (
+                        <div className="relative rounded-2xl overflow-hidden border-2 border-emerald-500 bg-slate-950 p-2 shadow-inner">
+                          <img
+                            src={idCardPreview}
+                            alt="Student ID Card Preview"
+                            className="w-full h-36 object-contain rounded-xl bg-slate-900"
+                          />
+                          <div className="absolute top-3 right-3 flex items-center gap-1.5">
+                            <span className="px-2.5 py-1 rounded-full bg-emerald-600 text-white text-[10px] font-bold flex items-center gap-1 shadow">
+                              <CheckCircle2 className="w-3 h-3" />
+                              Baseline ID Saved
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setIdCardFile(null);
+                                setIdCardPreview(null);
+                              }}
+                              className="p-1 rounded-full bg-red-600 text-white hover:bg-red-700 shadow cursor-pointer"
+                            >
+                              <X className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                          <label className="flex flex-col items-center justify-center p-3.5 border-2 border-dashed border-amber-300 hover:border-amber-500 rounded-xl cursor-pointer bg-white transition-all text-center">
+                            <Upload className="w-5 h-5 text-amber-600 mb-1" />
+                            <span className="text-xs font-bold text-slate-800">Upload ID Card Photo</span>
+                            <span className="text-[10px] text-slate-400">PNG, JPG or WEBP</span>
+                            <input
+                              type="file"
+                              accept="image/*"
+                              className="hidden"
+                              onChange={handleIdCardFileSelect}
+                            />
+                          </label>
+
+                          <button
+                            type="button"
+                            onClick={handleUseSampleIdCard}
+                            className="flex flex-col items-center justify-center p-3.5 border border-amber-300 hover:border-emerald-500 rounded-xl bg-amber-100/60 hover:bg-emerald-50 transition-all text-center cursor-pointer"
+                          >
+                            <Sparkles className="w-5 h-5 text-emerald-600 mb-1" />
+                            <span className="text-xs font-bold text-slate-800">Use Sample University ID</span>
+                            <span className="text-[10px] text-emerald-700">1-Click Official Student Card</span>
+                          </button>
+                        </div>
+                      )}
                     </div>
                   </div>
                 )}

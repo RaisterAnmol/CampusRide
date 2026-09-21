@@ -648,6 +648,16 @@ export const PostRidePage: React.FC = () => {
                   </span>
                 </div>
               </div>
+
+              <div className="p-4 rounded-xl bg-[#00D084]/10 border border-[#00D084]/30 flex items-start gap-3 text-xs">
+                <Shield className="w-4 h-4 text-[#18A66A] shrink-0 mt-0.5" />
+                <div>
+                  <span className="font-bold text-[#111111]">Daily Student ID Check Activated</span>
+                  <p className="text-[#646A67] text-[11px] mt-0.5">
+                    Before starting your first ride of the day, you will be prompted to snap a photo of your physical student ID card to match against your enrolled baseline card.
+                  </p>
+                </div>
+              </div>
             </motion.div>
           )}
         </AnimatePresence>

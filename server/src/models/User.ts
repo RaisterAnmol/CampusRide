@@ -69,6 +69,8 @@ export interface IUser extends Document {
   phone?: string;
   avatarURL?: string;
   verificationStatus: VerificationStatus;
+  enrolledIdCardUrl?: string;
+  lastDailyIdCheckDate?: string;
   faceEnrollmentStatus: FaceEnrollmentStatus;
   faceVerificationEnabled: boolean;
   faceEmbedding?: number[];
@@ -143,6 +145,8 @@ const UserSchema = new Schema<IUser>(
       default: "unverified",
       index: true,
     },
+    enrolledIdCardUrl: { type: String, default: "" },
+    lastDailyIdCheckDate: { type: String, default: "" },
     faceEnrollmentStatus: {
       type: String,
       enum: ["NOT_STARTED", "PENDING", "ENROLLED", "DISABLED"],

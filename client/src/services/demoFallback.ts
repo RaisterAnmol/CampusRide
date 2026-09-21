@@ -16,8 +16,9 @@ export const DEMO_FALLBACK_USERS: Record<string, any> = {
     gender: "male",
     preferences: { musicAllowed: true, smokingAllowed: false, womenOnlyDriver: false },
     avatarURL: "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&w=150&q=80",
-    phone: "+91 98765 43210",
-    vehicle: { model: "Honda City i-VTEC (Silver)", plateLast4: "4821", type: "car" }
+    vehicle: { model: "Honda City i-VTEC (Silver)", plateLast4: "4821", type: "car" },
+    enrolledIdCardUrl: "https://images.unsplash.com/photo-1544717305-2782549b5136?auto=format&fit=crop&w=600&q=80",
+    lastDailyIdCheckDate: "",
   },
   "rahul.sharma@college.edu": {
     _id: "usr_rahul_1002",
@@ -53,8 +54,9 @@ export const DEMO_FALLBACK_USERS: Record<string, any> = {
     gender: "female",
     preferences: { musicAllowed: true, smokingAllowed: false, womenOnlyDriver: true },
     avatarURL: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=150&q=80",
-    phone: "+91 98765 43212",
-    vehicle: { model: "Maruti Swift (Red)", plateLast4: "5512", type: "car" }
+    vehicle: { model: "Maruti Swift (Red)", plateLast4: "5512", type: "car" },
+    enrolledIdCardUrl: "https://images.unsplash.com/photo-1544717305-2782549b5136?auto=format&fit=crop&w=600&q=80",
+    lastDailyIdCheckDate: "",
   },
   "admin@campusride.edu": {
     _id: "usr_admin_1000",
