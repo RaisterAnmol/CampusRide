@@ -41,9 +41,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
   const [user, setUser] = useState<IUser | null>(null);
-  const [token, setToken] = useState<string | null>(() =>
-    localStorage.getItem("campusride_token"),
-  );
+  const [token, setToken] = useState<string | null>(() => {
+    const isExplicitAuth = localStorage.getItem("campusride_auth_v2") === "true";
+    if (!isExplicitAuth) {
+      // Purge legacy auto-login tokens from earlier sessions so visitor is greeted with Sign In / Sign Up gateway
+      localStorage.removeItem("campusride_token");
+      localStorage.removeItem("campusride_persona");
+      return null;
+    }
+    return localStorage.getItem("campusride_token");
+  });
   const [loading, setLoading] = useState(true);
   const [activePersona, setActivePersonaState] = useState<PersonaRole>(() => {
     const saved = localStorage.getItem("campusride_persona") as PersonaRole;
@@ -94,6 +101,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     setLoading(true);
     try {
       const res = await api.login(email, password);
+      localStorage.setItem("campusride_auth_v2", "true");
       localStorage.setItem("campusride_token", res.token);
       setToken(res.token);
       setUser(res.user);
@@ -114,6 +122,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     setLoading(true);
     try {
       const res = await api.register(userData);
+      localStorage.setItem("campusride_auth_v2", "true");
       localStorage.setItem("campusride_token", res.token);
       setToken(res.token);
       setUser(res.user);
@@ -133,6 +142,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   const logout = () => {
     localStorage.removeItem("campusride_token");
     localStorage.removeItem("campusride_persona");
+    localStorage.removeItem("campusride_auth_v2");
+    localStorage.removeItem("campusride_user_email");
     setToken(null);
     setUser(null);
   };

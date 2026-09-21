@@ -157,12 +157,16 @@ export const Navbar: React.FC = () => {
 
               {/* Log Out Button */}
               <button
-                onClick={logout}
-                className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-colors cursor-pointer"
-                title="Log Out"
+                onClick={() => {
+                  logout();
+                  navigate('/');
+                }}
+                className="px-2.5 py-1.5 text-xs font-semibold text-slate-600 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-colors cursor-pointer flex items-center gap-1.5 border border-slate-200"
+                title="Log Out & Switch Account"
                 aria-label="Log Out"
               >
-                <LogOut className="w-4 h-4" />
+                <LogOut className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Log Out</span>
               </button>
             </div>
           ) : (
