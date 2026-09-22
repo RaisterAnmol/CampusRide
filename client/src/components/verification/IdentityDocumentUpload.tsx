@@ -99,19 +99,19 @@ export const IdentityDocumentUpload: React.FC<IdentityDocumentUploadProps> = ({
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between">
-        <label className="text-sm font-semibold text-slate-200 flex items-center gap-1.5">
+        <label className="text-xs font-semibold text-slate-700 flex items-center gap-1.5">
           {label}
-          {required && <span className="text-emerald-400 font-bold">*</span>}
+          {required && <span className="text-emerald-600 font-bold">*</span>}
         </label>
         {file && (
-          <span className="text-xs text-emerald-400 flex items-center gap-1 font-medium bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
-            <CheckCircle2 className="w-3.5 h-3.5" />
+          <span className="text-[11px] text-emerald-700 flex items-center gap-1 font-medium bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
+            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
             {(file.size / 1024).toFixed(0)} KB Attached
           </span>
         )}
       </div>
 
-      <p className="text-xs text-slate-400">{description}</p>
+      <p className="text-xs text-slate-500">{description}</p>
 
       {/* Upload Zone or Preview */}
       {!file ? (
@@ -125,10 +125,10 @@ export const IdentityDocumentUpload: React.FC<IdentityDocumentUploadProps> = ({
           onClick={() => !disabled && fileInputRef.current?.click()}
           className={`relative border-2 border-dashed rounded-xl p-5 text-center cursor-pointer transition-all duration-200 ${
             disabled
-              ? "opacity-50 cursor-not-allowed border-slate-700 bg-slate-800/30"
+              ? "opacity-50 cursor-not-allowed border-slate-200 bg-slate-50"
               : isDragging
-              ? "border-emerald-500 bg-emerald-500/10 shadow-lg shadow-emerald-500/10"
-              : "border-slate-700 hover:border-slate-500 bg-slate-800/40 hover:bg-slate-800/70"
+              ? "border-[#143D32] bg-emerald-50/60 shadow-sm"
+              : "border-slate-300 hover:border-slate-400 bg-slate-50/50 hover:bg-slate-50"
           }`}
         >
           <input
@@ -140,26 +140,26 @@ export const IdentityDocumentUpload: React.FC<IdentityDocumentUploadProps> = ({
             className="hidden"
           />
           <div className="flex flex-col items-center justify-center gap-2">
-            <div className="w-10 h-10 rounded-full bg-slate-700/60 border border-slate-600 flex items-center justify-center text-slate-300">
-              <Upload className="w-5 h-5 text-emerald-400" />
+            <div className="w-10 h-10 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-500">
+              <Upload className="w-5 h-5 text-slate-600" />
             </div>
             <div>
-              <p className="text-xs font-medium text-slate-200">
+              <p className="text-xs font-medium text-slate-800">
                 Click or drag & drop document here
               </p>
-              <p className="text-[11px] text-slate-400 mt-0.5">
+              <p className="text-[11px] text-slate-500 mt-0.5">
                 PNG, JPG, WebP, or PDF up to 5MB
               </p>
             </div>
           </div>
         </div>
       ) : (
-        <div className="relative border border-slate-700 bg-slate-800/70 rounded-xl p-3.5 flex items-center justify-between gap-3 overflow-hidden group">
+        <div className="relative border border-slate-200 bg-white rounded-xl p-3 flex items-center justify-between gap-3 shadow-sm group">
           <div className="flex items-center gap-3 min-w-0">
             {previewUrl ? (
               <div
                 onClick={() => setIsZoomOpen(true)}
-                className="w-14 h-14 rounded-lg overflow-hidden border border-slate-600 bg-black flex-shrink-0 cursor-pointer relative group/thumb"
+                className="w-12 h-12 rounded-lg overflow-hidden border border-slate-200 bg-slate-100 flex-shrink-0 cursor-pointer relative group/thumb"
                 title="Click to zoom preview"
               >
                 <img
@@ -167,22 +167,22 @@ export const IdentityDocumentUpload: React.FC<IdentityDocumentUploadProps> = ({
                   alt={file.name}
                   className="w-full h-full object-cover"
                 />
-                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/thumb:opacity-100 flex items-center justify-center transition-opacity">
+                <div className="absolute inset-0 bg-black/30 opacity-0 group-hover/thumb:opacity-100 flex items-center justify-center transition-opacity">
                   <Eye className="w-4 h-4 text-white" />
                 </div>
               </div>
             ) : (
-              <div className="w-14 h-14 rounded-lg bg-red-950/40 border border-red-800/40 flex flex-col items-center justify-center text-red-400 flex-shrink-0">
-                <FileText className="w-6 h-6" />
-                <span className="text-[10px] font-bold uppercase mt-0.5">PDF</span>
+              <div className="w-12 h-12 rounded-lg bg-rose-50 border border-rose-200 flex flex-col items-center justify-center text-rose-600 flex-shrink-0">
+                <FileText className="w-5 h-5" />
+                <span className="text-[9px] font-bold uppercase mt-0.5">PDF</span>
               </div>
             )}
 
             <div className="min-w-0 flex-1">
-              <p className="text-xs font-semibold text-slate-100 truncate">
+              <p className="text-xs font-semibold text-slate-800 truncate">
                 {file.name}
               </p>
-              <p className="text-[11px] text-slate-400 flex items-center gap-2 mt-0.5">
+              <p className="text-[11px] text-slate-500 flex items-center gap-2 mt-0.5">
                 <span>{(file.size / 1024).toFixed(1)} KB</span>
                 <span>•</span>
                 <span className="uppercase">{file.type.split("/")[1] || "FILE"}</span>
@@ -190,12 +190,12 @@ export const IdentityDocumentUpload: React.FC<IdentityDocumentUploadProps> = ({
             </div>
           </div>
 
-          <div className="flex items-center gap-2 flex-shrink-0">
+          <div className="flex items-center gap-1.5 flex-shrink-0">
             {previewUrl && (
               <button
                 type="button"
                 onClick={() => setIsZoomOpen(true)}
-                className="p-2 text-slate-300 hover:text-white bg-slate-700/60 hover:bg-slate-700 rounded-lg transition-colors"
+                className="p-1.5 text-slate-500 hover:text-slate-800 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors"
                 title="Inspect document"
               >
                 <Eye className="w-4 h-4" />
@@ -205,7 +205,7 @@ export const IdentityDocumentUpload: React.FC<IdentityDocumentUploadProps> = ({
               type="button"
               onClick={handleRemove}
               disabled={disabled}
-              className="p-2 text-red-400 hover:text-red-300 bg-red-500/10 hover:bg-red-500/20 rounded-lg transition-colors"
+              className="p-1.5 text-rose-600 hover:text-rose-700 bg-rose-50 hover:bg-rose-100 rounded-lg transition-colors"
               title="Remove file"
             >
               <Trash2 className="w-4 h-4" />

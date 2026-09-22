@@ -21,6 +21,8 @@ import {
   Camera,
   Lock,
   Sparkles,
+  Check,
+  Calendar,
 } from "lucide-react";
 import { DailyDriverIdCheckModal } from "../components/verification/DailyDriverIdCheckModal";
 
@@ -175,45 +177,42 @@ export const VerificationStatusPage: React.FC = () => {
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-8 sm:px-6">
-      {/* Top Banner */}
-      <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-8 text-white shadow-xl mb-8 relative overflow-hidden">
-        <div className="absolute -right-10 -bottom-10 w-60 h-60 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
-
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 relative z-10">
+      {/* Breadcrumbs & Modern Clean Header */}
+      <div className="mb-6">
+        <nav className="flex items-center gap-1.5 text-xs text-slate-500 mb-2">
+          <Link to="/" className="hover:text-slate-900 transition-colors">Home</Link>
+          <span className="text-slate-300">/</span>
+          <span className="text-slate-900 font-medium">Student Verification</span>
+        </nav>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-200">
           <div>
-            <div className="flex items-center gap-2 text-emerald-400 font-bold text-xs uppercase tracking-wider mb-2">
-              <ShieldCheck className="w-4 h-4" />
-              Institutional Trust & Safety
-            </div>
-            <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-white">
-              Campus Identity & Driver Verification
+            <h1 className="text-2xl font-bold tracking-tight text-slate-900">
+              Campus ID & Driver Verification
             </h1>
-            <p className="text-sm text-slate-300 mt-1 max-w-xl">
-              All students and drivers are authenticated with official institutional ID cards,
-              driving credentials, and biometric checks to ensure 100% safe university transit.
+            <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
+              Verified credentials for {user.college || "University"} commuters and drivers.
             </p>
           </div>
-
-          <div className="flex-shrink-0">
+          <div>
             {currentStatus === "verified" ? (
-              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-2xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 font-bold text-sm">
-                <CheckCircle2 className="w-5 h-5 text-emerald-400" />
-                Verified Campus Member
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-semibold">
+                <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                <span>Verified Campus Member</span>
               </div>
             ) : currentStatus === "pending" ? (
-              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-2xl bg-amber-500/20 border border-amber-500/40 text-amber-300 font-bold text-sm">
-                <Clock className="w-5 h-5 text-amber-400 animate-pulse" />
-                Under Institutional Review
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-amber-50 border border-amber-200 text-amber-800 text-xs font-semibold">
+                <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
+                <span>Under Review</span>
               </div>
             ) : currentStatus === "rejected" ? (
-              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-2xl bg-rose-500/20 border border-rose-500/40 text-rose-300 font-bold text-sm">
-                <XCircle className="w-5 h-5 text-rose-400" />
-                Action Required
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-rose-50 border border-rose-200 text-rose-800 text-xs font-semibold">
+                <span className="w-2 h-2 rounded-full bg-rose-500" />
+                <span>Action Needed</span>
               </div>
             ) : (
-              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-2xl bg-slate-800 border border-slate-700 text-slate-300 font-bold text-sm">
-                <AlertCircle className="w-5 h-5 text-slate-400" />
-                Not Verified
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-100 border border-slate-200 text-slate-700 text-xs font-semibold">
+                <span className="w-2 h-2 rounded-full bg-slate-400" />
+                <span>Not Verified</span>
               </div>
             )}
           </div>
@@ -223,117 +222,173 @@ export const VerificationStatusPage: React.FC = () => {
       {/* State View */}
       {currentStatus === "verified" ? (
         <div className="space-y-6">
-          {/* Main Authenticated Header Card */}
-          <div className="bg-white border border-emerald-200 rounded-3xl p-6 sm:p-8 shadow-sm">
-            <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 text-center sm:text-left">
-              <div className="w-14 h-14 bg-emerald-100 rounded-2xl flex items-center justify-center text-emerald-600 flex-shrink-0">
-                <CheckCircle2 className="w-8 h-8" />
+          {/* Member Profile Summary Strip */}
+          <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex items-center gap-3.5">
+              <div className="w-12 h-12 rounded-xl bg-[#143D32] text-white flex items-center justify-center font-bold text-base flex-shrink-0 shadow-xs">
+                {user.name ? user.name.slice(0, 2).toUpperCase() : "CR"}
               </div>
-              <div className="flex-1">
-                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 text-emerald-800 text-xs font-bold border border-emerald-200 mb-2">
-                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
-                  <span>Authenticated {user.college} Member</span>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h2 className="text-base font-bold text-slate-900 leading-tight">
+                    {user.name}
+                  </h2>
+                  <span className="inline-flex items-center gap-1 text-[11px] font-medium text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
+                    <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                    Verified Student
+                  </span>
                 </div>
-                <h2 className="text-xl sm:text-2xl font-black text-slate-900">
-                  {user.name}'s Verified Student Identity
-                </h2>
-                <p className="text-xs sm:text-sm text-slate-600 mt-1 max-w-xl">
-                  You are officially verified under {user.college}. Your permanent college ID card is enrolled and cryptographically signed on file.
+                <p className="text-xs text-slate-500 mt-0.5">
+                  {user.college || "Uttaranchal University"} · {user.department || "B.Tech Computer Science"}
                 </p>
+                <div className="flex items-center gap-2 text-[11px] text-slate-400 mt-1">
+                  <span>Roll: <strong className="text-slate-700 font-mono">{user.studentId || user.institutionId || "UU-2024-DRV-842"}</strong></span>
+                  <span>•</span>
+                  <span>Role: <strong className="text-slate-700">{isDriver ? "Driver & Passenger" : "Passenger"}</strong></span>
+                </div>
               </div>
-              <div className="flex sm:flex-col gap-2 flex-shrink-0">
+            </div>
+
+            <div className="flex items-center gap-2">
+              <Link
+                to="/dashboard"
+                className="px-3.5 py-2 text-xs font-semibold text-slate-700 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors text-center"
+              >
+                Dashboard
+              </Link>
+              {isDriver && (
                 <Link
-                  to="/dashboard"
-                  className="px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold transition-all text-center"
+                  to="/post"
+                  className="px-3.5 py-2 text-xs font-semibold text-white bg-[#143D32] hover:bg-[#0d2820] rounded-xl transition-colors shadow-xs text-center"
                 >
-                  Go to Dashboard
+                  Offer a Ride
                 </Link>
-                {isDriver && (
-                  <Link
-                    to="/post"
-                    className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-sm transition-all text-center"
-                  >
-                    Publish a Ride
-                  </Link>
-                )}
-              </div>
+              )}
             </div>
           </div>
 
           {/* Section Grid: Enrolled Baseline ID Card & Daily Pre-Ride Verification */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Card 1: Official Student ID Card Enrolled */}
-            <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm flex flex-col justify-between">
+            {/* Card 1: Official University ID Card on File */}
+            <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-xs flex flex-col justify-between">
               <div>
                 <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
                   <div className="flex items-center gap-2 text-slate-900 font-bold text-sm">
-                    <GraduationCap className="w-4 h-4 text-emerald-600" />
-                    <span>Permanent Student ID Card</span>
+                    <GraduationCap className="w-4 h-4 text-[#143D32]" />
+                    <span>Official University Student ID</span>
                   </div>
-                  <span className="px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-bold">
+                  <span className="px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 border border-slate-200 text-[10px] font-semibold">
                     Enrolled Baseline
                   </span>
                 </div>
 
-                {/* ID Card Visual Representation */}
-                <div className="rounded-2xl border-2 border-slate-200 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-950 text-white p-5 shadow-md relative overflow-hidden">
-                  <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/10 rounded-full blur-2xl pointer-events-none" />
-                  
-                  <div className="flex items-start justify-between border-b border-slate-700/60 pb-3 mb-4">
-                    <div>
-                      <span className="text-[10px] font-mono uppercase tracking-widest text-emerald-400 font-bold block">
-                        Official Student Identity Card
-                      </span>
-                      <h3 className="text-sm font-bold text-white leading-snug">
-                        {user.college || "Uttaranchal University"}
-                      </h3>
-                    </div>
-                    <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
-                      ID ON FILE
-                    </span>
+                {/* Tangible Physical ID Card Mockup */}
+                <div className="relative rounded-2xl bg-white border border-slate-300 shadow-md overflow-hidden max-w-sm mx-auto">
+                  {/* Lanyard Hole Cutout */}
+                  <div className="pt-2 pb-1 bg-white flex justify-center">
+                    <div className="w-10 h-2.5 rounded-full bg-slate-200 border border-slate-300 shadow-inner" />
                   </div>
 
-                  <div className="flex items-center gap-4">
-                    <div className="w-24 h-28 rounded-xl overflow-hidden border border-slate-600 bg-slate-700 flex-shrink-0 shadow-inner">
-                      <img
-                        src={enrolledIdCardUrl}
-                        alt="Enrolled Student ID"
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-
-                    <div className="space-y-1.5 text-xs">
-                      <div>
-                        <span className="text-[10px] text-slate-400 uppercase tracking-wider block">Student Name</span>
-                        <span className="font-bold text-white text-sm">{user.name}</span>
+                  {/* University Header Stripe */}
+                  <div className="bg-[#143D32] text-white px-4 py-2.5 border-b-2 border-amber-400">
+                    <div className="flex items-center gap-2">
+                      <div className="w-6 h-6 rounded-full bg-amber-400/20 border border-amber-300/40 flex items-center justify-center flex-shrink-0">
+                        <Building className="w-3.5 h-3.5 text-amber-300" />
                       </div>
-                      <div>
-                        <span className="text-[10px] text-slate-400 uppercase tracking-wider block">Enrollment / Roll ID</span>
-                        <span className="font-mono font-bold text-emerald-400">
-                          {user.studentId || user.institutionId || "UU-2024-DRV-842"}
-                        </span>
-                      </div>
-                      <div>
-                        <span className="text-[10px] text-slate-400 uppercase tracking-wider block">Department / Role</span>
-                        <span className="text-slate-200 text-[11px] font-medium">
-                          {user.department || "Computer Science"} • {isDriver ? "Driver" : "Passenger"}
-                        </span>
+                      <div className="min-w-0">
+                        <h3 className="text-xs font-extrabold uppercase tracking-wide truncate text-white leading-tight">
+                          {user.college || "UTTARANCHAL UNIVERSITY"}
+                        </h3>
+                        <p className="text-[9px] text-emerald-200 font-medium tracking-tight">
+                          STUDENT IDENTITY CARD · 2024–2026
+                        </p>
                       </div>
                     </div>
                   </div>
 
-                  <div className="mt-4 pt-3 border-t border-slate-700/60 flex items-center justify-between text-[10px] text-slate-400 font-mono">
-                    <span>Valid Session: 2024-2026</span>
-                    <span className="text-emerald-400 font-bold">SHA256 • Verified Baseline</span>
+                  {/* Card Body with Passport Photo & Details */}
+                  <div className="p-3.5 bg-[#FAF9F6]">
+                    <div className="flex gap-3">
+                      {/* Photo column with official seal stamp */}
+                      <div className="relative flex-shrink-0">
+                        <div className="w-20 h-24 rounded border border-slate-300 overflow-hidden bg-slate-200 shadow-2xs">
+                          <img
+                            src={enrolledIdCardUrl}
+                            alt="Student ID"
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                        {/* Realistic round stamp mark */}
+                        <div className="absolute -bottom-1 -right-1 w-9 h-9 rounded-full border border-indigo-700/60 bg-indigo-50/40 text-[7px] font-extrabold text-indigo-900/80 flex items-center justify-center text-center leading-none p-0.5 rotate-[-12deg] pointer-events-none select-none">
+                          OFFICE SEAL
+                        </div>
+                      </div>
+
+                      {/* Details Column */}
+                      <div className="min-w-0 flex-1 space-y-1 text-[11px]">
+                        <div>
+                          <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider block">
+                            Student Name
+                          </span>
+                          <span className="font-bold text-slate-900 text-xs truncate block">
+                            {user.name}
+                          </span>
+                        </div>
+                        <div>
+                          <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider block">
+                            Roll / Enrollment No
+                          </span>
+                          <span className="font-mono font-bold text-slate-800 text-xs">
+                            {user.studentId || user.institutionId || "UU-2024-DRV-842"}
+                          </span>
+                        </div>
+                        <div>
+                          <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider block">
+                            Program / Course
+                          </span>
+                          <span className="text-slate-700 truncate block font-medium">
+                            {user.department || "B.Tech (CSE)"}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-3 pt-0.5 text-[10px] text-slate-500">
+                          <span>Blood: <strong>O+</strong></span>
+                          <span>•</span>
+                          <span>Batch: <strong>2024–26</strong></span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Barcode & Signature Strip */}
+                    <div className="mt-3 pt-2 border-t border-slate-200/80 flex items-end justify-between">
+                      {/* Realistic Barcode */}
+                      <div>
+                        <div className="font-mono tracking-widest text-slate-800 text-[10px] select-none h-4 flex items-center">
+                          |||| | ||| || |||| | ||| ||| |
+                        </div>
+                        <span className="text-[8px] font-mono text-slate-400 block tracking-tight">
+                          *{user.studentId || user.institutionId || "UU2024DRV842"}*
+                        </span>
+                      </div>
+                      {/* Signature */}
+                      <div className="text-right">
+                        <span className="font-serif italic text-xs text-indigo-900 font-medium block">
+                          Registrar
+                        </span>
+                        <span className="text-[8px] uppercase tracking-wider text-slate-400 font-semibold block">
+                          Auth. Signatory
+                        </span>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
 
-              <div className="mt-4 pt-4 border-t border-slate-100 flex items-center justify-between text-xs">
-                <span className="text-slate-500 text-[11px]">
-                  Uploaded during registration as your permanent reference ID card.
+              {/* Bottom Card Actions */}
+              <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
+                <span className="text-slate-400 text-[11px]">
+                  Enrolled as baseline student ID record.
                 </span>
-                <label className="text-emerald-600 hover:text-emerald-700 font-semibold cursor-pointer underline text-[11px]">
+                <label className="text-[#143D32] hover:text-emerald-700 font-semibold cursor-pointer underline text-[11px]">
                   Update ID Photo
                   <input
                     type="file"
@@ -357,108 +412,119 @@ export const VerificationStatusPage: React.FC = () => {
               </div>
             </div>
 
-            {/* Card 2: Daily Pre-Ride Physical ID Verification */}
-            <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm flex flex-col justify-between">
+            {/* Card 2: Daily Pre-Ride Driver Check-in */}
+            <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-xs flex flex-col justify-between">
               <div>
                 <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
                   <div className="flex items-center gap-2 text-slate-900 font-bold text-sm">
-                    <Camera className="w-4 h-4 text-blue-600" />
-                    <span>Daily Pre-Ride Physical ID Check</span>
+                    <Camera className="w-4 h-4 text-slate-700" />
+                    <span>Daily Driver Check-in</span>
                   </div>
-                  <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold ${
-                    isDailyVerified
-                      ? 'bg-emerald-100 text-emerald-800'
-                      : 'bg-amber-100 text-amber-800 animate-pulse'
-                  }`}>
-                    {isDailyVerified ? 'Today: Verified' : 'Today: Check Required'}
+                  <span
+                    className={`px-2 py-0.5 rounded-md text-[10px] font-semibold ${
+                      isDailyVerified
+                        ? "bg-emerald-50 text-emerald-800 border border-emerald-200"
+                        : "bg-amber-50 text-amber-800 border border-amber-200"
+                    }`}
+                  >
+                    {isDailyVerified ? "Cleared for Today" : "Check Required"}
                   </span>
                 </div>
 
-                <div className="space-y-3 text-xs">
-                  <p className="text-slate-600 text-xs leading-relaxed">
-                    Under university transit safety protocols, drivers must click a photo of their physical student ID card before starting their <strong>first ride of each day</strong>. It is checked against their enrolled baseline ID on file.
+                <div className="space-y-3.5 text-xs">
+                  <p className="text-slate-600 leading-relaxed text-xs">
+                    Drivers take a quick photo of their physical student ID card before starting their <strong>first ride of each day</strong>. This confirms you have your ID card with you and prevents account sharing.
                   </p>
 
                   {isDailyVerified ? (
-                    <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 space-y-2">
-                      <div className="flex items-center gap-2 text-emerald-900 font-bold text-xs">
+                    <div className="p-3.5 rounded-xl bg-emerald-50/70 border border-emerald-200 space-y-1.5">
+                      <div className="flex items-center gap-2 text-emerald-900 font-semibold text-xs">
                         <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                        <span>Driver ID Authenticated For Today ({todayStr})</span>
+                        <span>Driver ID Checked for Today ({todayStr})</span>
                       </div>
-                      <p className="text-[11px] text-emerald-800 leading-normal">
-                        Physical ID card was matched against baseline records with <strong>98.6% confidence</strong>. Trip controls and passenger pickup QR codes are unlocked for today's rides.
+                      <p className="text-[11px] text-emerald-800">
+                        Physical card confirmed against baseline record. Ride publishing and passenger pickup QR codes are active.
                       </p>
-                      <div className="flex items-center gap-3 text-[10px] font-mono text-emerald-700 pt-1">
-                        <span>Status: ACTIVE TODAY</span>
+                      <div className="flex items-center gap-2 text-[10px] text-emerald-700 pt-1">
+                        <span>Status: <strong>Active</strong></span>
                         <span>•</span>
-                        <span>Expires: Tonight 23:59</span>
+                        <span>Valid until: <strong>Tonight 11:59 PM</strong></span>
                       </div>
                     </div>
                   ) : (
-                    <div className="p-4 rounded-2xl bg-amber-50 border border-amber-200 space-y-2">
-                      <div className="flex items-center gap-2 text-amber-900 font-bold text-xs">
+                    <div className="p-3.5 rounded-xl bg-amber-50/80 border border-amber-200 space-y-1.5">
+                      <div className="flex items-center gap-2 text-amber-900 font-semibold text-xs">
                         <AlertCircle className="w-4 h-4 text-amber-600" />
-                        <span>Pre-Ride Physical ID Check Required</span>
+                        <span>Pre-Ride Check Required</span>
                       </div>
-                      <p className="text-[11px] text-amber-800 leading-normal">
-                        You have not snapped your physical ID card yet today ({todayStr}). Click below to take or upload a live photo before starting carpool rides.
+                      <p className="text-[11px] text-amber-800">
+                        You haven't snapped your physical ID card yet today ({todayStr}). Snap or upload a photo before starting trips.
                       </p>
                     </div>
                   )}
 
-                  <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-600 text-[11px] space-y-1">
-                    <span className="font-semibold text-slate-800 block">How Daily Verification Works:</span>
-                    <ul className="list-disc list-inside space-y-0.5 text-slate-500">
-                      <li>Use your camera to snap your physical ID card</li>
-                      <li>AI compares crest, holographic text & credentials against enrolled baseline</li>
-                      <li>Instantly grants 24-hour driver clearance for campus rides</li>
+                  <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 text-slate-600 text-[11px] space-y-1.5">
+                    <span className="font-semibold text-slate-800 block">How check-in works:</span>
+                    <ul className="space-y-1 text-slate-500">
+                      <li className="flex items-center gap-1.5">
+                        <span className="w-1.5 h-1.5 rounded-full bg-slate-400" />
+                        Snap front of your physical university card
+                      </li>
+                      <li className="flex items-center gap-1.5">
+                        <span className="w-1.5 h-1.5 rounded-full bg-slate-400" />
+                        Takes 10 seconds using phone or laptop camera
+                      </li>
+                      <li className="flex items-center gap-1.5">
+                        <span className="w-1.5 h-1.5 rounded-full bg-slate-400" />
+                        Grants 24-hour driver clearance for all rides today
+                      </li>
                     </ul>
                   </div>
                 </div>
               </div>
 
-              <div className="mt-5 pt-4 border-t border-slate-100 flex flex-wrap items-center gap-2">
+              <div className="mt-5 pt-3 border-t border-slate-100">
                 <button
                   type="button"
                   onClick={() => setShowDailyModal(true)}
-                  className={`flex-1 py-3 px-4 rounded-xl text-xs font-bold text-white shadow-sm flex items-center justify-center gap-2 cursor-pointer transition-all ${
+                  className={`w-full py-2.5 px-4 rounded-xl text-xs font-semibold text-white flex items-center justify-center gap-2 cursor-pointer transition-all ${
                     isDailyVerified
-                      ? 'bg-slate-900 hover:bg-slate-800'
-                      : 'bg-emerald-600 hover:bg-emerald-700 shadow-md'
+                      ? "bg-slate-800 hover:bg-slate-900 shadow-xs"
+                      : "bg-[#143D32] hover:bg-[#0d2820] shadow-sm"
                   }`}
                 >
                   <Camera className="w-4 h-4" />
-                  <span>{isDailyVerified ? "Re-Scan Physical ID Card" : "Scan Physical ID Card Now"}</span>
+                  <span>{isDailyVerified ? "Re-take Daily ID Photo" : "Start Daily Check-in"}</span>
                 </button>
               </div>
             </div>
           </div>
         </div>
       ) : currentStatus === "pending" && !resubmitting ? (
-        <div className="bg-white border border-amber-200 rounded-3xl p-8 shadow-sm space-y-6">
+        <div className="bg-white border border-slate-200 rounded-2xl p-6 sm:p-8 shadow-xs space-y-5">
           <div className="flex items-start gap-4">
-            <div className="w-12 h-12 rounded-2xl bg-amber-100 text-amber-600 flex items-center justify-center flex-shrink-0">
-              <Clock className="w-6 h-6 animate-pulse" />
+            <div className="w-10 h-10 rounded-xl bg-amber-50 border border-amber-200 text-amber-700 flex items-center justify-center flex-shrink-0">
+              <Clock className="w-5 h-5 animate-pulse" />
             </div>
             <div>
-              <h2 className="text-lg font-bold text-slate-900">
-                Verification Application Under Review
+              <h2 className="text-base font-bold text-slate-900">
+                Verification Documents Under Review
               </h2>
-              <p className="text-sm text-slate-600 mt-1">
-                Your credentials have been safely received by the {user.college} Student Safety & Transit Office.
-                Moderators review ID authenticity within 2 hours during active university sessions.
+              <p className="text-xs text-slate-600 mt-0.5">
+                Your submitted credentials have been received by the {user.college || "University"} Transit Office.
+                Reviews are typically completed within 2 hours during university sessions.
               </p>
             </div>
           </div>
 
-          <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl space-y-2 text-xs text-slate-700">
+          <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-2 text-xs text-slate-700">
             <div className="flex justify-between py-1 border-b border-slate-200">
               <span className="text-slate-500">Applicant:</span>
               <span className="font-semibold">{user.name} ({user.email})</span>
             </div>
             <div className="flex justify-between py-1 border-b border-slate-200">
-              <span className="text-slate-500">Applied Account Type:</span>
-              <span className="font-bold text-emerald-700">{user.accountType || (isDriver ? "DRIVER" : "PASSENGER")}</span>
+              <span className="text-slate-500">Applied Account:</span>
+              <span className="font-semibold text-slate-900">{user.accountType || (isDriver ? "DRIVER" : "PASSENGER")}</span>
             </div>
             <div className="flex justify-between py-1 border-b border-slate-200">
               <span className="text-slate-500">Student ID / Roll:</span>
@@ -474,40 +540,39 @@ export const VerificationStatusPage: React.FC = () => {
 
           <div className="flex items-center justify-between pt-2">
             <span className="text-xs text-slate-400">
-              Need to correct your documents?
+              Need to update your submitted files?
             </span>
             <button
               type="button"
               onClick={() => setResubmitting(true)}
-              className="text-xs font-semibold text-emerald-600 hover:text-emerald-700 underline"
+              className="text-xs font-semibold text-[#143D32] hover:underline cursor-pointer"
             >
-              Update / Replace Submission
+              Update Submission
             </button>
           </div>
         </div>
       ) : currentStatus === "rejected" && !resubmitting ? (
-        <div className="bg-white border border-rose-200 rounded-3xl p-8 shadow-sm space-y-6">
+        <div className="bg-white border border-rose-200 rounded-2xl p-6 sm:p-8 shadow-xs space-y-5">
           <div className="flex items-start gap-4">
-            <div className="w-12 h-12 rounded-2xl bg-rose-100 text-rose-600 flex items-center justify-center flex-shrink-0">
-              <XCircle className="w-6 h-6" />
+            <div className="w-10 h-10 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 flex items-center justify-center flex-shrink-0">
+              <XCircle className="w-5 h-5" />
             </div>
             <div>
-              <h2 className="text-lg font-bold text-slate-900">
-                Verification Application Needs Revision
+              <h2 className="text-base font-bold text-slate-900">
+                Application Needs Revision
               </h2>
-              <p className="text-sm text-slate-600 mt-1">
-                The institutional review team was unable to verify your submitted documents.
-                Please review the reason below and submit a clear updated photo.
+              <p className="text-xs text-slate-600 mt-0.5">
+                The verification team was unable to verify your submitted documents. Please check the feedback below and upload a clear, legible photo.
               </p>
             </div>
           </div>
 
           {existingRequest?.rejectionReason && (
-            <div className="p-4 bg-rose-50 border border-rose-200 rounded-2xl">
-              <span className="text-xs font-bold text-rose-800 uppercase tracking-wide">
-                Moderator Feedback:
+            <div className="p-4 bg-rose-50 border border-rose-200 rounded-xl">
+              <span className="text-[11px] font-bold text-rose-800 uppercase tracking-wide">
+                Review Feedback:
               </span>
-              <p className="text-sm text-rose-900 font-medium mt-1">
+              <p className="text-xs text-rose-900 font-medium mt-1">
                 "{existingRequest.rejectionReason}"
               </p>
             </div>
@@ -516,36 +581,36 @@ export const VerificationStatusPage: React.FC = () => {
           <button
             type="button"
             onClick={() => setResubmitting(true)}
-            className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-sm font-bold shadow-md transition-all flex items-center justify-center gap-2"
+            className="w-full py-2.5 bg-[#143D32] hover:bg-[#0d2820] text-white rounded-xl text-xs font-semibold shadow-xs transition-all flex items-center justify-center gap-2 cursor-pointer"
           >
             <RefreshCw className="w-4 h-4" />
-            Resubmit Verification Documents
+            Resubmit Documents
           </button>
         </div>
       ) : (
         /* Form View */
-        <div className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 shadow-sm">
+        <div className="bg-white border border-slate-200 rounded-2xl p-6 sm:p-8 shadow-xs">
           <div className="mb-6">
-            <h2 className="text-lg font-bold text-slate-900">
-              Complete Your Verification Application
+            <h2 className="text-base font-bold text-slate-900">
+              Submit Verification Documents
             </h2>
-            <p className="text-xs text-slate-500 mt-1">
-              Submit your university enrollment proof and face scan. High-resolution photos speed up instant review.
+            <p className="text-xs text-slate-500 mt-0.5">
+              Provide your university enrollment proof to unlock ride booking and carpooling.
             </p>
           </div>
 
           {submitError && (
-            <div className="mb-6 p-4 bg-rose-50 border border-rose-200 rounded-2xl flex items-center gap-3 text-xs text-rose-700">
-              <AlertCircle className="w-5 h-5 flex-shrink-0" />
+            <div className="mb-6 p-3 bg-rose-50 border border-rose-200 rounded-xl flex items-center gap-2.5 text-xs text-rose-700">
+              <AlertCircle className="w-4 h-4 flex-shrink-0" />
               <span>{submitError}</span>
             </div>
           )}
 
           <form onSubmit={handleSubmitVerification} className="space-y-6">
             {/* Step 1: Identifier Numbers */}
-            <div className="space-y-4">
+            <div className="space-y-3">
               <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2 border-b border-slate-100 pb-2">
-                <GraduationCap className="w-4 h-4 text-emerald-600" />
+                <GraduationCap className="w-4 h-4 text-[#143D32]" />
                 1. Institutional Identifiers
               </h3>
 
@@ -560,7 +625,7 @@ export const VerificationStatusPage: React.FC = () => {
                     placeholder="e.g. UU2023CS0142"
                     value={studentId}
                     onChange={(e) => setStudentId(e.target.value)}
-                    className="w-full px-3.5 py-2.5 text-sm rounded-xl border border-slate-300 focus:ring-2 focus:ring-emerald-500 focus:outline-none uppercase font-mono"
+                    className="w-full px-3.5 py-2 text-xs rounded-xl border border-slate-300 focus:ring-2 focus:ring-[#143D32] focus:outline-none uppercase font-mono"
                   />
                   <p className="text-[11px] text-slate-400 mt-1">
                     Found on your physical student ID card or portal.
@@ -578,10 +643,10 @@ export const VerificationStatusPage: React.FC = () => {
                       placeholder="e.g. UK07-20220014821"
                       value={driverId}
                       onChange={(e) => setDriverId(e.target.value)}
-                      className="w-full px-3.5 py-2.5 text-sm rounded-xl border border-slate-300 focus:ring-2 focus:ring-emerald-500 focus:outline-none uppercase font-mono"
+                      className="w-full px-3.5 py-2 text-xs rounded-xl border border-slate-300 focus:ring-2 focus:ring-[#143D32] focus:outline-none uppercase font-mono"
                     />
                     <p className="text-[11px] text-slate-400 mt-1">
-                      Required by campus safety bylaws to offer rides.
+                      Required by campus safety guidelines to offer rides.
                     </p>
                   </div>
                 )}
@@ -589,13 +654,13 @@ export const VerificationStatusPage: React.FC = () => {
             </div>
 
             {/* Step 2: Document Uploads */}
-            <div className="space-y-4 pt-4">
+            <div className="space-y-3 pt-2">
               <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2 border-b border-slate-100 pb-2">
-                <FileText className="w-4 h-4 text-emerald-600" />
-                2. Official Document Proof
+                <FileText className="w-4 h-4 text-[#143D32]" />
+                2. Document Proof
               </h3>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <IdentityDocumentUpload
                   label="Student ID Card"
                   description="Front photo of your valid university student ID card."
@@ -616,36 +681,36 @@ export const VerificationStatusPage: React.FC = () => {
               </div>
             </div>
 
-            {/* Step 3: Selfie Biometric Check */}
-            <div className="space-y-4 pt-4">
+            {/* Step 3: Selfie Check */}
+            <div className="space-y-3 pt-2">
               <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2 border-b border-slate-100 pb-2">
-                <ShieldCheck className="w-4 h-4 text-emerald-600" />
-                3. Real-Time Face Quality Check
+                <ShieldCheck className="w-4 h-4 text-[#143D32]" />
+                3. Face Photo Verification
               </h3>
 
               <SelfieCapture onCapture={setSelfieData} />
             </div>
 
             {/* Submit Actions */}
-            <div className="pt-6 border-t border-slate-100 flex items-center justify-between">
+            <div className="pt-4 border-t border-slate-100 flex items-center justify-between">
               {resubmitting ? (
                 <button
                   type="button"
                   onClick={() => setResubmitting(false)}
-                  className="text-xs font-semibold text-slate-500 hover:text-slate-800"
+                  className="text-xs font-semibold text-slate-500 hover:text-slate-800 cursor-pointer"
                 >
                   Cancel and view current status
                 </button>
               ) : (
                 <span className="text-xs text-slate-400">
-                  Data processed in accordance with student safety guidelines.
+                  Data processed in accordance with campus safety bylaws.
                 </span>
               )}
 
               <button
                 type="submit"
                 disabled={loading}
-                className="px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-lg shadow-emerald-600/20 transition-all flex items-center gap-2 disabled:opacity-50"
+                className="px-5 py-2.5 bg-[#143D32] hover:bg-[#0d2820] text-white rounded-xl text-xs font-semibold shadow-sm transition-all flex items-center gap-2 disabled:opacity-50 cursor-pointer"
               >
                 {loading ? (
                   <RefreshCw className="w-4 h-4 animate-spin" />

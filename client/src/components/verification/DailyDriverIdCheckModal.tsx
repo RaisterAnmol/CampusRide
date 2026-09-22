@@ -8,9 +8,9 @@ import {
   X,
   RefreshCw,
   Sparkles,
-  GraduationCap,
-  Calendar,
   Lock,
+  ArrowRight,
+  RotateCcw,
 } from 'lucide-react';
 import { api } from '../../services/api';
 import { IUser } from '../../types';
@@ -70,7 +70,7 @@ export const DailyDriverIdCheckModal: React.FC<DailyDriverIdCheckModalProps> = (
       }
     } catch (err: any) {
       console.warn('Camera access error:', err);
-      setError('Could not access webcam/camera. Please upload a photo of your ID card instead.');
+      setError('Could not open camera. Please upload an ID photo instead.');
       setCameraActive(false);
     }
   };
@@ -111,7 +111,6 @@ export const DailyDriverIdCheckModal: React.FC<DailyDriverIdCheckModalProps> = (
   };
 
   const handleUseMockScan = () => {
-    // Immediate fallback sample for test evaluation
     setCapturedPhoto(enrolledIdCardUrl);
     stopCamera();
   };
@@ -125,17 +124,14 @@ export const DailyDriverIdCheckModal: React.FC<DailyDriverIdCheckModalProps> = (
     setScanning(true);
     setError(null);
 
-    // Step 1: Scan hologram & university crest
-    setScanStep('Scanning physical ID card hologram and university crest...');
+    setScanStep('Checking document clarity and details...');
     await new Promise((r) => setTimeout(r, 600));
 
-    // Step 2: Extract text & student credentials
-    setScanStep(`Verifying student identity for ${user?.name || 'driver'} (${user?.college || 'Campus'})...`);
+    setScanStep(`Confirming enrollment record for ${user?.name || 'Driver'}...`);
     await new Promise((r) => setTimeout(r, 700));
 
-    // Step 3: Compare with enrolled baseline ID
-    setScanStep('Comparing captured ID card with registered baseline on file...');
-    await new Promise((r) => setTimeout(r, 600));
+    setScanStep('Comparing against enrolled baseline ID...');
+    await new Promise((r) => setTimeout(r, 500));
 
     try {
       await api.verifyDailyDriverId({
@@ -144,19 +140,18 @@ export const DailyDriverIdCheckModal: React.FC<DailyDriverIdCheckModalProps> = (
         rideId,
       });
 
-      // Save daily verification record locally
       localStorage.setItem('campusride_daily_id_verified_' + (user?._id || 'me'), todayStr);
       localStorage.setItem('campusride_driver_verified_date', todayStr);
 
       setMatchScore(98.6);
       setVerified(true);
-      setScanStep('✓ Identity Verified! Driver authenticated for today.');
+      setScanStep('Verified. Daily driver check-in complete.');
 
       setTimeout(() => {
         onVerified();
-      }, 1200);
+      }, 1100);
     } catch (err: any) {
-      setError(err.message || 'Daily ID check failed. Please ensure your card is well-lit and clearly visible.');
+      setError(err.message || 'Verification check failed. Please ensure the student ID photo is clearly lit and legible.');
     } finally {
       setScanning(false);
     }
@@ -165,218 +160,199 @@ export const DailyDriverIdCheckModal: React.FC<DailyDriverIdCheckModalProps> = (
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-in fade-in">
-      <div className="relative w-full max-w-2xl bg-white rounded-3xl border border-slate-200 shadow-2xl overflow-hidden flex flex-col max-h-[92vh]">
-        {/* Modal Header */}
-        <div className="p-6 bg-slate-900 text-white flex items-start justify-between">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/65 backdrop-blur-sm animate-in fade-in">
+      <div className="relative w-full max-w-lg bg-white rounded-2xl border border-slate-200 shadow-2xl overflow-hidden flex flex-col max-h-[92vh]">
+        {/* Clean Header */}
+        <div className="px-6 py-5 border-b border-slate-100 flex items-start justify-between bg-white">
           <div>
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/20 border border-amber-500/30 text-amber-300 text-xs font-bold uppercase tracking-wider mb-2">
-              <ShieldCheck className="w-4 h-4 text-amber-400" />
-              <span>Mandatory Daily Driver Verification</span>
+            <div className="flex items-center gap-1.5 text-xs font-semibold text-emerald-700 mb-1">
+              <span className="w-2 h-2 rounded-full bg-emerald-500" />
+              <span>Daily Pre-Ride Check</span>
             </div>
-            <h2 className="text-xl sm:text-2xl font-black tracking-tight">
-              Pre-Ride Student ID Card Check
+            <h2 className="text-lg font-bold text-slate-900 tracking-tight">
+              Verify Physical College ID
             </h2>
-            <p className="text-xs text-slate-300 mt-1">
-              Under university transit safety protocols, drivers must capture a live photo of their
-              physical Student ID card before starting their first ride of each day.
+            <p className="text-xs text-slate-500 mt-0.5">
+              Take a quick photo of your physical card before starting today's rides.
             </p>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer"
+            className="p-2 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-xl transition-colors cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Modal Body */}
-        <div className="p-6 overflow-y-auto space-y-6 flex-1 text-slate-800">
+        <div className="p-6 overflow-y-auto space-y-5 text-slate-800">
           {error && (
-            <div className="p-3.5 bg-red-50 border border-red-200 text-red-900 rounded-2xl flex items-center gap-3 text-xs font-semibold">
-              <AlertCircle className="w-5 h-5 text-red-600 shrink-0" />
+            <div className="p-3 bg-rose-50 border border-rose-200 text-rose-800 rounded-xl flex items-center gap-2.5 text-xs">
+              <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
               <span>{error}</span>
             </div>
           )}
 
-          {/* Side-by-Side Reference & Daily Capture Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {/* Reference Card on File */}
-            <div className="border border-slate-200 rounded-2xl p-4 bg-slate-50 flex flex-col justify-between space-y-3">
-              <div>
-                <div className="flex items-center justify-between mb-1">
-                  <span className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
-                    <GraduationCap className="w-4 h-4 text-emerald-600" />
-                    Enrolled Baseline ID
-                  </span>
-                  <span className="px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 text-[10px] font-bold">
-                    On Record
-                  </span>
-                </div>
-                <p className="text-[11px] text-slate-500">
-                  Registered at account onboarding for {user.name}.
-                </p>
-              </div>
-
-              <div className="relative rounded-xl overflow-hidden border border-slate-300 bg-slate-900 h-44 flex items-center justify-center">
-                <img
-                  src={enrolledIdCardUrl}
-                  alt="Enrolled Reference ID"
+          {/* Camera Viewfinder Box */}
+          <div className="relative rounded-2xl overflow-hidden bg-slate-900 aspect-[16/10] flex items-center justify-center border border-slate-800 shadow-inner">
+            {cameraActive ? (
+              <div className="relative w-full h-full bg-black">
+                <video
+                  ref={videoRef}
+                  autoPlay
+                  playsInline
+                  muted
                   className="w-full h-full object-cover"
                 />
-                <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent p-2 text-white">
-                  <p className="text-xs font-bold truncate">{user.name}</p>
-                  <p className="text-[10px] text-slate-300 truncate">{user.college}</p>
+
+                {/* Viewfinder Card Guides */}
+                <div className="absolute inset-5 pointer-events-none border-2 border-dashed border-white/40 rounded-xl flex flex-col justify-between p-3">
+                  <div className="flex justify-between">
+                    <div className="w-4 h-4 border-t-2 border-l-2 border-emerald-400" />
+                    <div className="w-4 h-4 border-t-2 border-r-2 border-emerald-400" />
+                  </div>
+                  <p className="text-[11px] font-medium text-white/80 text-center bg-black/40 backdrop-blur-xs py-1 px-3 rounded-full mx-auto">
+                    Align student ID within box
+                  </p>
+                  <div className="flex justify-between">
+                    <div className="w-4 h-4 border-b-2 border-l-2 border-emerald-400" />
+                    <div className="w-4 h-4 border-b-2 border-r-2 border-emerald-400" />
+                  </div>
+                </div>
+
+                {/* Camera Shutter Ring */}
+                <div className="absolute inset-x-0 bottom-3 flex items-center justify-center gap-4">
+                  <button
+                    type="button"
+                    onClick={handleCaptureFromCamera}
+                    title="Take Photo"
+                    className="w-13 h-13 rounded-full border-3 border-white flex items-center justify-center bg-white/30 hover:bg-white/40 active:scale-95 transition-all cursor-pointer shadow-lg"
+                  >
+                    <div className="w-9 h-9 rounded-full bg-white hover:bg-slate-100 transition-colors" />
+                  </button>
                 </div>
               </div>
-            </div>
-
-            {/* Today's Capture */}
-            <div className="border border-slate-200 rounded-2xl p-4 bg-white flex flex-col justify-between space-y-3">
-              <div>
-                <div className="flex items-center justify-between mb-1">
-                  <span className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
-                    <Calendar className="w-4 h-4 text-blue-600" />
-                    Today's Live ID Card
-                  </span>
-                  <span className="px-2 py-0.5 rounded bg-blue-100 text-blue-800 text-[10px] font-bold">
-                    {todayStr}
-                  </span>
-                </div>
-                <p className="text-[11px] text-slate-500">
-                  Live snapshot of your physical college ID card today.
-                </p>
-              </div>
-
-              <div className="relative rounded-xl overflow-hidden border-2 border-dashed border-slate-300 bg-slate-950 h-44 flex items-center justify-center">
-                {cameraActive ? (
-                  <div className="relative w-full h-full bg-black">
-                    <video
-                      ref={videoRef}
-                      autoPlay
-                      playsInline
-                      muted
-                      className="w-full h-full object-cover"
-                    />
-                    <div className="absolute inset-x-0 bottom-2 flex justify-center">
-                      <button
-                        type="button"
-                        onClick={handleCaptureFromCamera}
-                        className="px-3.5 py-1.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs rounded-xl shadow-lg flex items-center gap-1.5 cursor-pointer"
-                      >
-                        <Camera className="w-3.5 h-3.5" />
-                        Snap ID
-                      </button>
-                    </div>
-                  </div>
-                ) : capturedPhoto ? (
-                  <div className="relative w-full h-full">
-                    <img
-                      src={capturedPhoto}
-                      alt="Today's Captured ID"
-                      className="w-full h-full object-cover"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setCapturedPhoto(null)}
-                      className="absolute top-2 right-2 p-1 bg-red-600 hover:bg-red-700 text-white rounded-full shadow cursor-pointer"
-                    >
-                      <X className="w-3.5 h-3.5" />
-                    </button>
-                    {verified && (
-                      <div className="absolute inset-0 bg-emerald-950/70 flex flex-col items-center justify-center text-white p-3 text-center">
-                        <CheckCircle2 className="w-8 h-8 text-emerald-400 mb-1" />
-                        <p className="text-xs font-bold text-emerald-300">Identity Match Verified</p>
-                        <p className="text-[10px] text-emerald-200">Score: {matchScore}% Confidence</p>
-                      </div>
-                    )}
-                  </div>
-                ) : (
-                  <div className="flex flex-col items-center justify-center text-center p-4 text-slate-400">
-                    <Camera className="w-8 h-8 mb-2 text-slate-500" />
-                    <p className="text-xs font-semibold text-slate-300">No photo taken yet</p>
-                    <p className="text-[10px] text-slate-500 mt-0.5">
-                      Use camera or upload your physical ID
-                    </p>
+            ) : capturedPhoto ? (
+              <div className="relative w-full h-full bg-slate-950">
+                <img
+                  src={capturedPhoto}
+                  alt="Captured Student ID"
+                  className="w-full h-full object-contain"
+                />
+                {!verified && !scanning && (
+                  <button
+                    type="button"
+                    onClick={() => setCapturedPhoto(null)}
+                    className="absolute top-3 right-3 px-2.5 py-1.5 bg-black/70 hover:bg-black text-white text-xs font-medium rounded-lg backdrop-blur-sm flex items-center gap-1.5 cursor-pointer shadow transition-colors"
+                  >
+                    <RotateCcw className="w-3.5 h-3.5" />
+                    <span>Retake</span>
+                  </button>
+                )}
+                {verified && (
+                  <div className="absolute inset-0 bg-emerald-950/80 backdrop-blur-xs flex flex-col items-center justify-center text-white p-4 text-center">
+                    <CheckCircle2 className="w-10 h-10 text-emerald-400 mb-2" />
+                    <p className="text-sm font-bold text-white">Daily Check Verified</p>
+                    <p className="text-xs text-emerald-200 mt-0.5">Matched with enrolled record ({matchScore}%)</p>
                   </div>
                 )}
               </div>
+            ) : (
+              /* Idle Prompt inside Viewfinder */
+              <div className="flex flex-col items-center justify-center text-center p-6 text-slate-300 space-y-4">
+                <div className="w-12 h-12 rounded-2xl bg-white/10 border border-white/15 flex items-center justify-center text-white">
+                  <Camera className="w-6 h-6" />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-white">Take or upload a photo of your ID</p>
+                  <p className="text-xs text-slate-400 mt-1 max-w-xs">
+                    Hold your physical student card up to your camera or select an existing photo.
+                  </p>
+                </div>
 
-              {/* Action Buttons for Capture */}
-              {!verified && (
-                <div className="flex flex-wrap items-center gap-2">
-                  {!cameraActive && (
-                    <button
-                      type="button"
-                      onClick={startCamera}
-                      className="flex-1 py-2 px-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer transition-colors"
-                    >
-                      <Camera className="w-3.5 h-3.5" />
-                      Open Camera
-                    </button>
-                  )}
-
-                  <label className="flex-1 py-2 px-3 rounded-xl border border-slate-300 hover:bg-slate-100 text-slate-700 text-xs font-semibold flex items-center justify-center gap-1.5 cursor-pointer text-center">
-                    <Upload className="w-3.5 h-3.5 text-slate-600" />
-                    Upload Photo
-                    <input
-                      ref={fileInputRef}
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      onChange={handleFileUpload}
-                    />
-                  </label>
+                <div className="flex items-center gap-2 pt-1">
+                  <button
+                    type="button"
+                    onClick={startCamera}
+                    className="px-4 py-2 bg-white hover:bg-slate-100 text-slate-900 text-xs font-bold rounded-xl transition-all flex items-center gap-1.5 cursor-pointer shadow-sm"
+                  >
+                    <Camera className="w-3.5 h-3.5" />
+                    <span>Open Camera</span>
+                  </button>
 
                   <button
                     type="button"
-                    onClick={handleUseMockScan}
-                    title="1-Click demo test card"
-                    className="p-2 rounded-xl bg-amber-100 hover:bg-amber-200 text-amber-900 text-xs font-bold cursor-pointer"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white text-xs font-semibold rounded-xl border border-slate-700 transition-all flex items-center gap-1.5 cursor-pointer"
                   >
-                    <Sparkles className="w-3.5 h-3.5 text-amber-700" />
+                    <Upload className="w-3.5 h-3.5 text-slate-300" />
+                    <span>Upload Image</span>
                   </button>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleFileUpload}
+                  />
                 </div>
-              )}
-            </div>
+
+                <button
+                  type="button"
+                  onClick={handleUseMockScan}
+                  className="text-[11px] text-slate-400 hover:text-white underline transition-colors cursor-pointer"
+                >
+                  Quick Test: Use registered card photo
+                </button>
+              </div>
+            )}
           </div>
 
-          {/* Verification Progress Scanner */}
-          {scanning && (
-            <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-2xl space-y-2">
-              <div className="flex items-center gap-2 text-xs font-bold text-emerald-900">
-                <RefreshCw className="w-4 h-4 text-emerald-600 animate-spin" />
-                <span>Authentication in Progress...</span>
+          {/* Reference Card Strip */}
+          <div className="flex items-center justify-between p-3.5 bg-slate-50 border border-slate-200 rounded-xl text-xs">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="w-11 h-11 rounded-lg overflow-hidden border border-slate-200 bg-white flex-shrink-0">
+                <img
+                  src={enrolledIdCardUrl}
+                  alt="Enrolled Reference"
+                  className="w-full h-full object-cover"
+                />
               </div>
-              <p className="text-xs text-emerald-800 font-mono">{scanStep}</p>
-              <div className="w-full bg-emerald-200 h-1.5 rounded-full overflow-hidden">
-                <div className="bg-emerald-600 h-full w-3/4 animate-pulse" />
+              <div className="min-w-0">
+                <span className="text-[10px] uppercase font-bold text-slate-400 block tracking-wider">
+                  Enrolled ID on File
+                </span>
+                <p className="font-semibold text-slate-900 truncate">{user.name}</p>
+                <p className="text-slate-500 truncate text-[11px]">
+                  {user.studentId || user.institutionId || "UU-2024-DRV-842"} · {user.college || "Uttaranchal University"}
+                </p>
               </div>
             </div>
-          )}
+            <span className="px-2.5 py-1 bg-emerald-50 text-emerald-800 border border-emerald-200 text-[10px] font-bold rounded-md flex-shrink-0">
+              On File
+            </span>
+          </div>
 
-          {verified && (
-            <div className="p-4 bg-emerald-100 border border-emerald-300 rounded-2xl flex items-center gap-3">
-              <CheckCircle2 className="w-6 h-6 text-emerald-700 shrink-0" />
-              <div>
-                <p className="text-xs font-bold text-emerald-950">
-                  Daily Driver Authentication Complete!
-                </p>
-                <p className="text-[11px] text-emerald-800 mt-0.5">
-                  Physical student ID card matched baseline records with 98.6% confidence. Unlocking
-                  trip controls and passenger pickup QR...
-                </p>
+          {/* Verification Progress */}
+          {scanning && (
+            <div className="p-3.5 bg-emerald-50/70 border border-emerald-200 rounded-xl space-y-2">
+              <div className="flex items-center gap-2 text-xs font-semibold text-emerald-900">
+                <RefreshCw className="w-3.5 h-3.5 text-emerald-700 animate-spin" />
+                <span>{scanStep}</span>
+              </div>
+              <div className="w-full bg-emerald-100 h-1.5 rounded-full overflow-hidden">
+                <div className="bg-emerald-600 h-full w-2/3 animate-pulse" />
               </div>
             </div>
           )}
         </div>
 
         {/* Modal Footer */}
-        <div className="p-4 bg-slate-50 border-t border-slate-200 flex items-center justify-between">
-          <span className="text-[11px] text-slate-500 flex items-center gap-1">
+        <div className="px-6 py-4 bg-slate-50 border-t border-slate-200 flex items-center justify-between">
+          <span className="text-[11px] text-slate-500 flex items-center gap-1.5">
             <Lock className="w-3.5 h-3.5 text-slate-400" />
-            Verified once per 24 hours per vehicle
+            Check-in valid for 24 hours
           </span>
 
           <div className="flex items-center gap-2">
@@ -384,7 +360,7 @@ export const DailyDriverIdCheckModal: React.FC<DailyDriverIdCheckModalProps> = (
               type="button"
               onClick={onClose}
               disabled={scanning}
-              className="px-4 py-2 rounded-xl border border-slate-300 hover:bg-slate-200 text-xs font-semibold text-slate-700 cursor-pointer"
+              className="px-3.5 py-2 rounded-xl border border-slate-300 hover:bg-slate-200 text-xs font-semibold text-slate-700 transition-colors cursor-pointer"
             >
               Cancel
             </button>
@@ -393,12 +369,12 @@ export const DailyDriverIdCheckModal: React.FC<DailyDriverIdCheckModalProps> = (
               type="button"
               onClick={handleVerify}
               disabled={!capturedPhoto || scanning || verified}
-              className="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-xs font-bold text-white shadow-sm flex items-center gap-1.5 cursor-pointer transition-all"
+              className="px-4 py-2 rounded-xl bg-[#143D32] hover:bg-[#0d2820] disabled:opacity-50 text-xs font-bold text-white shadow-sm flex items-center gap-1.5 cursor-pointer transition-all"
             >
               {scanning ? (
                 <>
                   <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                  Authenticating...
+                  Verifying...
                 </>
               ) : verified ? (
                 <>
@@ -407,8 +383,8 @@ export const DailyDriverIdCheckModal: React.FC<DailyDriverIdCheckModalProps> = (
                 </>
               ) : (
                 <>
-                  <ShieldCheck className="w-3.5 h-3.5" />
-                  Authenticate ID Card
+                  <span>Verify ID Card</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
                 </>
               )}
             </button>
