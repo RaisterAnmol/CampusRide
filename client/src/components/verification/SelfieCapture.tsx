@@ -283,23 +283,23 @@ export const SelfieCapture: React.FC<SelfieCaptureProps> = ({
       case "GOOD":
         return {
           text: "Face Aligned & Ready",
-          color: "border-emerald-500 text-emerald-400 bg-emerald-500/10",
+          color: "border-emerald-500 text-emerald-700 bg-emerald-50",
         };
       case "TOO_FAR":
         return {
           text: "Move Closer to Camera",
-          color: "border-amber-500 text-amber-400 bg-amber-500/10",
+          color: "border-amber-400 text-amber-700 bg-amber-50",
         };
       case "MULTIPLE_FACES":
         return {
           text: "Only 1 Person Allowed in Frame",
-          color: "border-rose-500 text-rose-400 bg-rose-500/10",
+          color: "border-rose-400 text-rose-700 bg-rose-50",
         };
       case "NO_FACE":
       default:
         return {
           text: "Position Face in Center",
-          color: "border-slate-600 text-slate-400 bg-slate-800/60",
+          color: "border-slate-300 text-slate-600 bg-slate-50",
         };
     }
   };
@@ -309,38 +309,38 @@ export const SelfieCapture: React.FC<SelfieCaptureProps> = ({
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <label className="text-sm font-semibold text-slate-200 flex items-center gap-1.5">
+        <label className="text-sm font-semibold text-slate-800 flex items-center gap-1.5">
           Live Verification Selfie
-          <span className="text-emerald-400 font-bold">*</span>
+          <span className="text-[#143D32] font-bold">*</span>
         </label>
         {capturedData && (
-          <span className="text-xs text-emerald-400 flex items-center gap-1 font-medium bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
+          <span className="text-xs text-emerald-700 flex items-center gap-1 font-medium bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
             <CheckCircle2 className="w-3.5 h-3.5" />
             Quality Score: {capturedData.qualityScore}%
           </span>
         )}
       </div>
 
-      <p className="text-xs text-slate-400">
+      <p className="text-xs text-slate-500">
         A clear, forward-facing photo used by campus moderators to verify your
         student/driver badge.
       </p>
 
       {/* Biometric Consent */}
-      <div className="bg-slate-800/40 border border-slate-700/80 rounded-xl p-3 flex items-start gap-2.5">
+      <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 flex items-start gap-2.5">
         <input
           id="biometricConsent"
           type="checkbox"
           checked={consentGiven}
           onChange={(e) => setConsentGiven(e.target.checked)}
           disabled={disabled || isCameraActive || !!capturedData}
-          className="mt-0.5 h-4 w-4 rounded border-slate-600 bg-slate-900 text-emerald-500 focus:ring-emerald-500"
+          className="mt-0.5 h-4 w-4 rounded border-slate-300 bg-white text-[#143D32] focus:ring-[#143D32]"
         />
         <label
           htmlFor="biometricConsent"
-          className="text-xs text-slate-300 leading-relaxed cursor-pointer select-none"
+          className="text-xs text-slate-600 leading-relaxed cursor-pointer select-none"
         >
-          <span className="font-semibold text-white">Biometric Consent:</span> I
+          <span className="font-semibold text-slate-800">Biometric Consent:</span> I
           consent to capturing my selfie to verify my university identity. Facial
           features are processed securely on-device and stored encrypted for
           institutional identity verification only.
@@ -348,24 +348,24 @@ export const SelfieCapture: React.FC<SelfieCaptureProps> = ({
       </div>
 
       {cameraError && (
-        <div className="flex items-center gap-2 text-xs text-rose-400 bg-rose-500/10 border border-rose-500/20 p-2.5 rounded-xl">
-          <AlertCircle className="w-4 h-4 flex-shrink-0" />
+        <div className="flex items-center gap-2 text-xs text-rose-700 bg-rose-50 border border-rose-200 p-2.5 rounded-xl">
+          <AlertCircle className="w-4 h-4 flex-shrink-0 text-rose-500" />
           <span>{cameraError}</span>
         </div>
       )}
 
       {/* Camera / Preview Viewport */}
-      <div className="relative border border-slate-700 rounded-2xl bg-slate-950 overflow-hidden flex flex-col items-center justify-center min-h-[260px] p-4">
+      <div className="relative border border-slate-200 rounded-2xl bg-slate-50 overflow-hidden flex flex-col items-center justify-center min-h-[260px] p-4">
         {/* Captured state */}
         {capturedData ? (
           <div className="flex flex-col items-center gap-3">
-            <div className="w-40 h-40 rounded-full overflow-hidden border-4 border-emerald-500 shadow-xl shadow-emerald-500/20 relative">
+            <div className="w-40 h-40 rounded-full overflow-hidden border-4 border-emerald-500 shadow-lg relative">
               <img
                 src={capturedData.previewUrl}
                 alt="Captured Selfie"
                 className="w-full h-full object-cover"
               />
-              <div className="absolute bottom-1 right-1 bg-emerald-500 text-black p-1 rounded-full">
+              <div className="absolute bottom-1 right-1 bg-emerald-500 text-white p-1 rounded-full">
                 <CheckCircle2 className="w-4 h-4" />
               </div>
             </div>
@@ -374,7 +374,7 @@ export const SelfieCapture: React.FC<SelfieCaptureProps> = ({
                 type="button"
                 onClick={handleRetake}
                 disabled={disabled}
-                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 border border-slate-600 rounded-lg transition-colors"
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-600 hover:text-slate-900 bg-white hover:bg-slate-100 border border-slate-300 rounded-lg transition-colors"
               >
                 <RefreshCw className="w-3.5 h-3.5" />
                 Retake Photo
@@ -385,7 +385,7 @@ export const SelfieCapture: React.FC<SelfieCaptureProps> = ({
           /* Live Camera View */
           <div className="relative flex flex-col items-center">
             {/* Guide Oval */}
-            <div className="relative w-48 h-48 rounded-full overflow-hidden border-4 shadow-2xl transition-colors duration-200 bg-black flex items-center justify-center">
+            <div className="relative w-48 h-48 rounded-full overflow-hidden border-4 shadow-md transition-colors duration-200 bg-black flex items-center justify-center">
               <video
                 ref={videoRef}
                 autoPlay
@@ -397,12 +397,12 @@ export const SelfieCapture: React.FC<SelfieCaptureProps> = ({
               <div
                 className={`absolute inset-0 rounded-full border-4 pointer-events-none transition-colors duration-200 ${
                   faceStatus === "GOOD"
-                    ? "border-emerald-500 shadow-inner shadow-emerald-500/50"
+                    ? "border-emerald-500"
                     : faceStatus === "TOO_FAR"
-                    ? "border-amber-500"
+                    ? "border-amber-400"
                     : faceStatus === "MULTIPLE_FACES"
                     ? "border-rose-500"
-                    : "border-slate-500/50"
+                    : "border-slate-400/60"
                 }`}
               />
             </div>
@@ -412,7 +412,7 @@ export const SelfieCapture: React.FC<SelfieCaptureProps> = ({
               className={`mt-3 px-3 py-1 rounded-full border text-xs font-medium flex items-center gap-1.5 ${statusBadge.color}`}
             >
               {faceStatus === "GOOD" ? (
-                <UserCheck className="w-3.5 h-3.5 text-emerald-400" />
+                <UserCheck className="w-3.5 h-3.5 text-emerald-600" />
               ) : (
                 <AlertCircle className="w-3.5 h-3.5" />
               )}
@@ -425,7 +425,7 @@ export const SelfieCapture: React.FC<SelfieCaptureProps> = ({
                 type="button"
                 onClick={handleCapturePhoto}
                 disabled={faceStatus !== "GOOD" || disabled}
-                className="flex items-center gap-2 px-4 py-2 text-xs font-bold rounded-xl shadow-lg transition-all disabled:opacity-40 disabled:cursor-not-allowed bg-emerald-500 hover:bg-emerald-400 text-slate-950"
+                className="flex items-center gap-2 px-4 py-2 text-xs font-bold rounded-xl shadow transition-all disabled:opacity-40 disabled:cursor-not-allowed bg-[#143D32] hover:bg-[#0d2820] text-white"
               >
                 <Camera className="w-4 h-4" />
                 Capture Selfie
@@ -434,7 +434,7 @@ export const SelfieCapture: React.FC<SelfieCaptureProps> = ({
               <button
                 type="button"
                 onClick={stopCamera}
-                className="px-3 py-2 text-xs font-semibold text-slate-400 hover:text-white bg-slate-800 rounded-xl"
+                className="px-3 py-2 text-xs font-semibold text-slate-600 hover:text-slate-900 bg-white hover:bg-slate-100 border border-slate-300 rounded-xl transition-colors"
               >
                 Cancel
               </button>
@@ -443,14 +443,14 @@ export const SelfieCapture: React.FC<SelfieCaptureProps> = ({
         ) : (
           /* Idle Start Screen */
           <div className="flex flex-col items-center gap-3 text-center max-w-sm">
-            <div className="w-14 h-14 rounded-full bg-slate-800/80 border border-slate-700 flex items-center justify-center text-emerald-400">
+            <div className="w-14 h-14 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-[#143D32]">
               <Camera className="w-7 h-7" />
             </div>
             <div>
-              <p className="text-sm font-semibold text-white">
+              <p className="text-sm font-semibold text-slate-800">
                 Take a Real-Time Selfie
               </p>
-              <p className="text-xs text-slate-400 mt-1">
+              <p className="text-xs text-slate-500 mt-1">
                 Ensure good lighting, look straight at the camera, and remove
                 sunglasses or hats.
               </p>
@@ -461,7 +461,7 @@ export const SelfieCapture: React.FC<SelfieCaptureProps> = ({
                 type="button"
                 onClick={startCamera}
                 disabled={!consentGiven || disabled || isModelLoading}
-                className="flex items-center gap-2 px-4 py-2 text-xs font-bold rounded-xl shadow-md transition-all disabled:opacity-40 disabled:cursor-not-allowed bg-emerald-500 hover:bg-emerald-400 text-slate-950"
+                className="flex items-center gap-2 px-4 py-2 text-xs font-bold rounded-xl shadow transition-all disabled:opacity-40 disabled:cursor-not-allowed bg-[#143D32] hover:bg-[#0d2820] text-white"
               >
                 {isModelLoading ? (
                   <>
@@ -481,7 +481,7 @@ export const SelfieCapture: React.FC<SelfieCaptureProps> = ({
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
                 disabled={!consentGiven || disabled}
-                className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-xl disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-slate-600 hover:text-slate-900 bg-white hover:bg-slate-100 border border-slate-300 rounded-xl disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
               >
                 <Upload className="w-3.5 h-3.5" />
                 Upload Photo
